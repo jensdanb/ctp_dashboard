@@ -130,7 +130,7 @@ class TestDBfunctions:
 
             """ Tests for later"""
             """
-            assert order_2.date == pre_date + timedelta(days=5)
+            assert order_2.day == pre_date + timedelta(days=5)
             # Complete what you can
             order_2.execute_move('s')
             assert stockpoint.current_stock == 0

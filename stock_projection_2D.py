@@ -12,7 +12,7 @@ class StockProjection:
         # start and end of projection
         if start_date:
             if not date.today() <= start_date[0] < date.today() + timedelta(days=31):
-                raise ValueError('Start date must be between today and today+31 days.')
+                raise ValueError('Start day must be between today and today+31 days.')
             self.start_date = start_date[0]
         else:
             self.start_date = date.today()
