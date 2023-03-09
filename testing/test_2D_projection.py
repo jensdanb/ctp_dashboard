@@ -29,7 +29,7 @@ class TestStockProjection:
                     projection = ProjectionATP(invalid_session, all_stockpoints[0])
 
             invalid_db_objects = []
-            for table in all_db_tables - {StockPoint}:
+            for table in all_db_classes - {StockPoint}:
                 invalid_db_objects += get_all(test_session, table)
 
             for invalid_object in invalid_db_objects:
