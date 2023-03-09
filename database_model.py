@@ -126,7 +126,9 @@ test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=Tr
 Base.metadata.create_all(test_engine)
 
 
-""" Core Database Functions """
+""" Core Database functions """
+
+
 def run_in_session(session, func, **kwargs):
     try:
         return_statement = func(session, **kwargs)
@@ -162,9 +164,9 @@ def reset_db(engine):
     Base.metadata.create_all(engine)
 
 
-
-
 """ Querying functions: """
+
+
 def get_by_name(session, table, element_name: str):
     stmt = select(table).where(table.name == element_name)
     return session.scalars(stmt).one()
@@ -239,6 +241,8 @@ def order_filter_v2(session, stockpoint, start_date, end_date, incoming: bool, o
 
 
 """ Database Modification functions """
+
+
 def execute_move(session: Session, move: MoveOrder):
     sender: StockPoint = move.route.sender
     receiver: StockPoint = move.route.receiver
