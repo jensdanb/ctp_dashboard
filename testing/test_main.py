@@ -1,4 +1,4 @@
-from main import *
+from sandbox import *
 import pytest
 
 
