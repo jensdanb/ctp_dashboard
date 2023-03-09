@@ -120,24 +120,13 @@ class MoveOrder(Base):
                f"{self.route.receiver.name} on date {self.date}."
 
 
-
-
-
-all_db_tables = {Product, StockPoint, SupplyRoute, MoveOrder}  # {} means it is a set
+all_db_classes = {Product, StockPoint, SupplyRoute, MoveOrder}  # {} means it is a set
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
 Base.metadata.create_all(test_engine)
 
 
-"""
-Database definition ended. 
-Database interface functions starts.
-
-Call functions as function()
-If not already in a session, use run_with_session() as wrapper to run function with a temporary session. 
-"""
-
-
+""" Core Database Functions """
 def run_in_session(session, func, **kwargs):
     try:
         return_statement = func(session, **kwargs)
@@ -157,30 +146,25 @@ def run_with_session(engine, func, **kwargs):
             return return_statement
 
 
-def execute_move(session: Session, move: MoveOrder):
-    sender: StockPoint = move.route.sender
-    receiver: StockPoint = move.route.receiver
-
-    # Validity checks
-    if move.completion_status != 0:
-        raise ValueError("Cannot execute. Order is completed or invalid. ")
-    elif not sender.current_stock >= move.quantity:
-        raise ValueError("Cannot move more than the sender has!")
-
-    # Execution
-    else:
-
-        sender.current_stock -= move.quantity
-        receiver.current_stock += move.quantity
-        move.completion_status = 1
-
-
 def add_from_class(session, input_class):
     class_instance = input_class()  # Create a new object of class input_class
     session.add(class_instance.product)
     # if class_instance not in session.scalars(select(Product)).all():
 
 
+def premake_db(session, source_class):
+    if not session.scalars(select(Product)).all():
+        run_in_session(session, add_from_class, input_class=source_class)
+
+
+def reset_db(engine):
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+
+
+
+""" Querying functions: """
 def get_by_name(session, table, element_name: str):
     stmt = select(table).where(table.name == element_name)
     return session.scalars(stmt).one()
@@ -252,3 +236,32 @@ def order_filter_v2(session, stockpoint, start_date, end_date, incoming: bool, o
         orders += get_outgoing_move_orders(session, stockpoint)
     orders = filter_by_date(orders, start_date, end_date)
     return pending_orders(orders)
+
+
+""" Database Modification functions """
+def execute_move(session: Session, move: MoveOrder):
+    sender: StockPoint = move.route.sender
+    receiver: StockPoint = move.route.receiver
+
+    # Validity checks
+    if move.completion_status != 0:
+        raise ValueError("Cannot execute. Order is completed or invalid. ")
+    elif not sender.current_stock >= move.quantity:
+        raise ValueError("Cannot move more than the sender has!")
+
+    # Execution
+    else:
+        sender.current_stock -= move.quantity
+        receiver.current_stock += move.quantity
+        move.completion_status = 1
+
+
+def add_mock_order_history(session: Session, route: SupplyRoute):
+    first_date = date.today() - timedelta(days=365)
+    route.move_orders.append(MoveOrder(quantity=60, date=first_date + timedelta(days=5), date_of_registration=first_date))
+
+
+def execute_scheduled(session, date):
+    scheduled_move_orders = get_scheduled_orders(session, date)
+    for order in scheduled_move_orders:
+        execute_move(session, order)

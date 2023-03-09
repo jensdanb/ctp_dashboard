@@ -15,65 +15,68 @@ def capture_sql_exception(func, *args, **kwargs):
 
 class TestConfig:
     def test_config(self):
-        for table in all_db_tables:
+        for table in all_db_classes:
             assert issubclass(table, Base)
 
 
-class TestDBI:
+class TestDBModel:
     def test_add_from_class(self):
-        test_session = Session(test_engine)
+        with Session(test_engine) as test_session:
 
-        # Ensure new database starts empty
-        for db_table in [Product, StockPoint, SupplyRoute, MoveOrder]:
-            table_contents = get_all(test_session, db_table)
-            assert table_contents == []
+            # Ensure new database starts empty
+            for db_table in [Product, StockPoint, SupplyRoute, MoveOrder]:
+                table_contents = get_all(test_session, db_table)
+                assert table_contents == []
 
-        # Fill
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+            # Fill
+            add_from_class(test_session, CcrpBase)
 
-        # Ensure it's been filled
-        for db_table in all_db_tables:
-            table_contents = get_all(test_session, db_table)
-            assert isinstance(table_contents, list) and table_contents != []
+            # Ensure it's been filled
+            for db_table in all_db_classes:
+                table_contents = get_all(test_session, db_table)
+                assert isinstance(table_contents, list) and table_contents != []
+
+            test_session.commit()
 
     def test_order_filtering(self):
-        test_session = Session(test_engine)
+        with Session(test_engine) as test_session:
 
-        all_orders = get_all(test_session, MoveOrder)
-        all_stockpoints = get_all(test_session, StockPoint)
+            all_orders = get_all(test_session, MoveOrder)
+            all_stockpoints = get_all(test_session, StockPoint)
 
-        for stockpoint in all_stockpoints:
-            all_incoming = get_incoming_move_orders(test_session, stockpoint)
-            all_outgoing = get_outgoing_move_orders(test_session, stockpoint)
+            for stockpoint in all_stockpoints:
+                all_incoming = get_incoming_move_orders(test_session, stockpoint)
+                all_outgoing = get_outgoing_move_orders(test_session, stockpoint)
 
-            assert set(all_incoming) <= set(all_orders)
-            assert set(all_outgoing) <= set(all_orders)
-            assert set(all_incoming).isdisjoint(set(all_outgoing))
+                assert set(all_incoming) <= set(all_orders)
+                assert set(all_outgoing) <= set(all_orders)
+                assert set(all_incoming).isdisjoint(set(all_outgoing))
 
-            early_dates = [date.today(), date.today() + timedelta(days=5), date.today() + timedelta(days=30)]
-            later_dates = [date.today() + timedelta(days=5), date.today() + timedelta(days=15), date.today() + timedelta(days=100)]
+                early_dates = [date.today(), date.today() + timedelta(days=5), date.today() + timedelta(days=30)]
+                later_dates = [date.today() + timedelta(days=5), date.today() + timedelta(days=15), date.today() + timedelta(days=100)]
 
-            for start_date in early_dates:
+                for start_date in early_dates:
 
-                # end_date < start_date should be invalid
-                for end_date in list(filter(lambda d: d < start_date, later_dates)):
-                    with pytest.raises(ValueError) as exc_info:
-                        order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
+                    # end_date < start_date should be invalid
+                    for end_date in list(filter(lambda d: d < start_date, later_dates)):
+                        with pytest.raises(ValueError) as exc_info:
+                            order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
 
-                # start_date <= end_date ensured by filter, proceed to test:
-                for end_date in list(filter(lambda d: d >= start_date, later_dates)):
-                    incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=False)
-                    outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)
-                    all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
+                    # start_date <= end_date ensured by filter, proceed to test:
+                    for end_date in list(filter(lambda d: d >= start_date, later_dates)):
+                        incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=False)
+                        outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)
+                        all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
 
-                    assert set(incoming_these_dates) <= set(all_incoming)
-                    assert set(outgoing_these_dates) <= set(all_outgoing)
-                    assert set(all_orders_these_dates) <= set(all_orders)
-                    assert set(incoming_these_dates) <= set(all_orders_these_dates) >= set(outgoing_these_dates)
+                        assert set(incoming_these_dates) <= set(all_incoming)
+                        assert set(outgoing_these_dates) <= set(all_outgoing)
+                        assert set(all_orders_these_dates) <= set(all_orders)
+                        assert set(incoming_these_dates) <= set(all_orders_these_dates) >= set(outgoing_these_dates)
 
-                    # assert consistent result between single-step and two-step filtering
-                    assert incoming_these_dates == filter_by_date(all_incoming, start_date, end_date)
-                    assert outgoing_these_dates == filter_by_date(all_outgoing, start_date, end_date)
+                        # assert consistent result between single-step and two-step filtering
+                        assert incoming_these_dates == filter_by_date(all_incoming, start_date, end_date)
+                        assert outgoing_these_dates == filter_by_date(all_outgoing, start_date, end_date)
+            # Does not commit
 
 
 class TestDBfunctions:
@@ -140,7 +143,7 @@ class TestDBfunctions:
         test_session = Session(test_engine)
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
 
-        for db_table in all_db_tables:
+        for db_table in all_db_classes:
             table_contents = get_all(test_session, db_table)
             assert isinstance(table_contents, list) and table_contents != []
         route = get_all(test_session, SupplyRoute)[0]  # Route nr. [0] is from bulk to finished
