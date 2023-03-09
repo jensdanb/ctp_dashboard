@@ -261,8 +261,7 @@ def execute_move(session: Session, move: MoveOrder):
 
 
 def add_mock_order_history(session: Session, route: SupplyRoute):
-    first_date = date.today() - timedelta(days=365)
-    route.move_orders.append(MoveOrder(quantity=60, date=first_date + timedelta(days=5), date_of_registration=first_date))
+    pass
 
 
 def execute_scheduled(session, date):

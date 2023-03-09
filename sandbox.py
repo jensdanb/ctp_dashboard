@@ -53,19 +53,13 @@ def check_CTP_plots(engine, date):
         print_and_plot(end_session, ProjectionCTP)
 
 
-def add_mock_orders(route):
-    first_date = date.today() - timedelta(days=365)
-    new_orders = generate_random_move_orders(n=3, status=1, first_date=first_date, max_registration_delay=350, max_execution_delay=8, max_quantity=60)
-    route.move_orders += new_orders
-
-
 def generate_random_move_orders(n, status, first_date, max_registration_delay, max_execution_delay, max_quantity):
     orders = []
     for i in range(n):
         reg_date = first_date + timedelta(days=random.randint(0, max_registration_delay))
         exe_date = reg_date + timedelta(days=random.randint(0, max_execution_delay))
         quantity = random.randint(max_quantity/3, max_quantity)
-        orders.append(MoveOrder(quantity=quantity, date=exe_date, date_of_registration=first_date, completion_status=status))
+        orders.append(MoveOrder(quantity=quantity, date=exe_date, date_of_registration=reg_date, completion_status=status))
 
     return orders
 
@@ -81,11 +75,18 @@ if __name__ == "__main__":
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
     with Session(main_engine) as history_session:
+        # Setup
         route = get_all(history_session, SupplyRoute)[1] # Second route in the DB
-        add_mock_orders(route)
-        history_session.commit()
-        print(route.move_orders[-1])
+        first_date = date.today() - timedelta(days=365)
 
+        # Generate an order history
+        new_orders = generate_random_move_orders(n=3, status=1, first_date=first_date, max_registration_delay=350,
+                                                 max_execution_delay=8, max_quantity=60)
+        route.move_orders += new_orders
+        history_session.commit()
+
+        # Inspect order history
+        print(route.move_orders[-1])
         stmt = select(MoveOrder).where(MoveOrder.completion_status == 1).where(MoveOrder.date <= date.today())
         completed_orders = history_session.scalars(stmt).all()
         for order in completed_orders:
