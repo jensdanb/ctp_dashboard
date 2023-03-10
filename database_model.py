@@ -108,12 +108,12 @@ class MoveRequest(Base):
     route: Mapped[SupplyRoute] = relationship(back_populates="move_requests")
 
     # Variables
-    quantity: Mapped[int]
     date_of_registration = Column(Date)  # Insert current-start_date
     expected_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
 
+    quantity: Mapped[int]
     move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="request")
-    quantity_delivered: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
+    quantity_delivered: Mapped[int] = mapped_column(default=0)
 
     def __repr__(self):
         return f"Request {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
