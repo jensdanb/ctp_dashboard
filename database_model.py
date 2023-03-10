@@ -77,6 +77,8 @@ class SupplyRoute(Base):
     receiver_id: Mapped[int] = mapped_column(ForeignKey("stock_point.id"))
     receiver: Mapped[StockPoint] = relationship(foreign_keys=receiver_id)
 
+    # move_requests: Mapped[List["MoveRequest"]] = relationship(back_populates="route")
+
     move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="route")
     has_moved_total: Mapped[int] = mapped_column(default=0)
 
@@ -97,6 +99,27 @@ class SupplyRoute(Base):
         return f"Supply route for {self.product.name} from {self.sender.name} to {self.receiver.name}. " \
                f"Capacity {self.capacity} with Lead Time {self.lead_time}"
 
+"""
+class MoveRequest(Base):
+    __tablename__ = "move_request"
+
+    # Identity
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Relationships
+    route_id = mapped_column(ForeignKey("supply_route.id"), nullable=False)
+    route: Mapped[SupplyRoute] = relationship(back_populates="move_requests")
+
+    # Variables
+    quantity: Mapped[int]
+    date_of_registration = Column(Date)  # Insert current-start_date
+    expected_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
+    quantity_delivered: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
+
+    def __repr__(self):
+        return f"Request {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
+               f"{self.route.receiver.name} for delivery by {self.expected_delivery_date}."
+"""
 
 class MoveOrder(Base):
     __tablename__ = "move_order"
@@ -120,7 +143,7 @@ class MoveOrder(Base):
                f"{self.route.receiver.name} on date {self.date}."
 
 
-all_db_classes = {Product, StockPoint, SupplyRoute, MoveOrder}  # {} means it is a set
+all_db_classes = {Product, StockPoint, SupplyRoute, MoveOrder}  # A set. MoveRequest
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
 Base.metadata.create_all(test_engine)

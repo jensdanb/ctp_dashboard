@@ -1,11 +1,12 @@
 """ Database engine is initializes upon import!!! """
-import random
 import pandas as pd
 import numpy as np
+import random
 
 from database_model import *
 from db_premade_content_for_testing import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
+from forecasting import generate_random_move_orders
 
 
 def print_and_plot(session, projection_type): # projection_type can be ProjectionATP or ProjectionCTP
@@ -53,22 +54,6 @@ def check_CTP_plots(engine, day):
         print_and_plot(end_session, ProjectionCTP)
 
 
-def generate_random_move_orders(n, status, first_date, max_registration_delay, max_execution_delay,
-                                quantity_distribution, *args, **rescale):
-    # Accepts random.distribution functions and its required *args.
-    # If the distribution by default returns values in its own range, such as 0 < x < 1, include rescale= at the end.
-    orders = []
-    for i in range(n):
-        reg_date = first_date + timedelta(days=random.randint(0, max_registration_delay))
-        exe_date = reg_date + timedelta(days=random.randint(0, max_execution_delay))
-        quantity = quantity_distribution(*args)
-        if rescale:
-            quantity = int(quantity * rescale['rescale'])
-        orders.append(MoveOrder(quantity=quantity, date=exe_date, date_of_registration=reg_date, completion_status=status))
-
-    return orders
-
-
 if __name__ == "__main__":
     global_date = date.today()
     main_engine = create_engine("sqlite+pysqlite:///ctp_database.sqlite", echo=False, future=True)
@@ -79,22 +64,30 @@ if __name__ == "__main__":
     #check_CTP_plots(main_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
-    with Session(main_engine) as history_session:
+    with Session(main_engine) as make_order_history_session:
         # Setup
-        route = get_all(history_session, SupplyRoute)[1] # Second route in the DB
+        route = get_all(make_order_history_session, SupplyRoute)[1] # Second route in the DB
         first_date = date.today() - timedelta(days=365)
 
         # Generate an order history
-        new_orders = generate_random_move_orders(3, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=60)
+        new_orders = generate_random_move_orders(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
         route.move_orders += new_orders
-        history_session.commit()
+        make_order_history_session.commit()
+
+    with Session(main_engine) as history_inspection_session:
+        # Find the content made in previous session
+        route = get_all(make_order_history_session, SupplyRoute)[1]
+        stmt = select(MoveOrder).where(MoveOrder.completion_status == 1).where(MoveOrder.date <= date.today())
+        completed_orders = make_order_history_session.scalars(stmt).all()
 
         # Inspect order history
         print(route.move_orders[-1])
-        stmt = select(MoveOrder).where(MoveOrder.completion_status == 1).where(MoveOrder.date <= date.today())
-        completed_orders = history_session.scalars(stmt).all()
         for order in completed_orders:
             delivery_time = order.date - order.date_of_registration
             print(f'Delivery: {delivery_time.days} days. Quantity: {order.quantity} units.')
+
+        # Plot
+
+
 
     reset_db(main_engine)
