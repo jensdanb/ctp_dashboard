@@ -6,7 +6,7 @@ import random
 from database_model import *
 from db_premade_content_for_testing import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
-from forecasting import generate_random_move_requests
+from forecasting import generate_random_requests
 
 
 def print_and_plot(session, projection_type): # projection_type can be ProjectionATP or ProjectionCTP
@@ -64,21 +64,21 @@ if __name__ == "__main__":
     check_CTP_plots(main_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
-    with Session(main_engine) as make_order_history_session:
+    with Session(main_engine) as requests_generation_session:
         # Setup
-        route = get_all(make_order_history_session, SupplyRoute)[1] # Second route in the DB
+        route = get_all(requests_generation_session, SupplyRoute)[1] # Second route in the DB
         first_date = date.today() - timedelta(days=365)
 
         # Generate an order history
-        new_orders = generate_random_move_requests(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
+        new_orders = generate_random_requests(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
         route.move_requests += new_orders
-        make_order_history_session.commit()
+        requests_generation_session.commit()
 
     with Session(main_engine) as history_inspection_session:
         # Find the content made in previous session
-        route = get_all(make_order_history_session, SupplyRoute)[1]
-        stmt = select(MoveOrder).where(MoveOrder.completion_status == 1).where(MoveOrder.date <= date.today())
-        completed_orders = make_order_history_session.scalars(stmt).all()
+        route = get_all(history_inspection_session, SupplyRoute)[1]
+        stmt = select(MoveRequest).where(MoveRequest.quantity_delivered == MoveRequest.quantity).where(MoveRequest.expected_delivery_date <= date.today())
+        completed_orders = history_inspection_session.scalars(stmt).all()
 
         # Inspect order history
         print(route.move_requests[-1])
