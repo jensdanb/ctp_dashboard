@@ -6,7 +6,7 @@ import random
 from database_model import *
 from db_premade_content_for_testing import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
-from forecasting import generate_random_move_orders
+from forecasting import generate_random_move_requests
 
 
 def print_and_plot(session, projection_type): # projection_type can be ProjectionATP or ProjectionCTP
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     with Session(main_engine) as init_session:
         premake_db(init_session, CcrpBase)
 
-    #check_CTP_plots(main_engine, global_date)
+    check_CTP_plots(main_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
     with Session(main_engine) as make_order_history_session:
@@ -70,8 +70,8 @@ if __name__ == "__main__":
         first_date = date.today() - timedelta(days=365)
 
         # Generate an order history
-        new_orders = generate_random_move_orders(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
-        route.move_orders += new_orders
+        new_orders = generate_random_move_requests(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
+        route.move_requests += new_orders
         make_order_history_session.commit()
 
     with Session(main_engine) as history_inspection_session:
@@ -81,10 +81,10 @@ if __name__ == "__main__":
         completed_orders = make_order_history_session.scalars(stmt).all()
 
         # Inspect order history
-        print(route.move_orders[-1])
-        for order in completed_orders:
-            delivery_time = order.date - order.date_of_registration
-            print(f'Delivery: {delivery_time.days} days. Quantity: {order.quantity} units.')
+        print(route.move_requests[-1])
+        for request in completed_orders:
+            delivery_time = request.expected_delivery_date - request.date_of_registration
+            print(f'Delivery: {delivery_time.days} days. Quantity: {request.quantity} units.')
 
         # Plot
 

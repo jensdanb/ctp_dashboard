@@ -24,7 +24,7 @@ class TestDBModel:
         with Session(test_engine) as test_session:
 
             # Ensure new database starts empty
-            for db_table in [Product, StockPoint, SupplyRoute, MoveOrder]:
+            for db_table in all_db_classes:
                 table_contents = get_all(test_session, db_table)
                 assert table_contents == []
 

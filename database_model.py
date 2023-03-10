@@ -77,10 +77,7 @@ class SupplyRoute(Base):
     receiver_id: Mapped[int] = mapped_column(ForeignKey("stock_point.id"))
     receiver: Mapped[StockPoint] = relationship(foreign_keys=receiver_id)
 
-    # move_requests: Mapped[List["MoveRequest"]] = relationship(back_populates="route")
-
-    move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="route")
-    has_moved_total: Mapped[int] = mapped_column(default=0)
+    move_requests: Mapped[List["MoveRequest"]] = relationship(back_populates="route")
 
     # Capability
     capacity: Mapped[int] = mapped_column(CheckConstraint("capacity >= 0"), default=0)
@@ -99,7 +96,7 @@ class SupplyRoute(Base):
         return f"Supply route for {self.product.name} from {self.sender.name} to {self.receiver.name}. " \
                f"Capacity {self.capacity} with Lead Time {self.lead_time}"
 
-"""
+
 class MoveRequest(Base):
     __tablename__ = "move_request"
 
@@ -114,12 +111,14 @@ class MoveRequest(Base):
     quantity: Mapped[int]
     date_of_registration = Column(Date)  # Insert current-start_date
     expected_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
+
+    move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="request")
     quantity_delivered: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
 
     def __repr__(self):
         return f"Request {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
                f"{self.route.receiver.name} for delivery by {self.expected_delivery_date}."
-"""
+
 
 class MoveOrder(Base):
     __tablename__ = "move_order"
@@ -128,22 +127,18 @@ class MoveOrder(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     # Relationships
-    route_id = mapped_column(ForeignKey("supply_route.id"), nullable=False)
-    route: Mapped[SupplyRoute] = relationship(back_populates="move_orders")
+    request_id = mapped_column(ForeignKey("move_request.id"), nullable=False)
+    request: Mapped[MoveRequest] = relationship(back_populates="move_orders")
 
     # Variables
     quantity: Mapped[int]
 
     date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
-    date_of_registration = Column(Date)  # Insert current-start_date
     completion_status: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
 
-    def __repr__(self):
-        return f"Move {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
-               f"{self.route.receiver.name} on date {self.date}."
 
 
-all_db_classes = {Product, StockPoint, SupplyRoute, MoveOrder}  # A set. MoveRequest
+all_db_classes = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}  # A set.
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
 Base.metadata.create_all(test_engine)
@@ -218,7 +213,8 @@ def get_outgoing_routes(session, stockpoint):
 def get_incoming_move_orders(session, stockpoint):
     stmt = (
         select(MoveOrder).
-        join(MoveOrder.route).
+        join(MoveOrder.request).
+        join(MoveRequest.route).
         where(SupplyRoute.receiver == stockpoint)
     )
     return session.scalars(stmt).all()
@@ -227,7 +223,8 @@ def get_incoming_move_orders(session, stockpoint):
 def get_outgoing_move_orders(session, stockpoint):
     stmt = (
         select(MoveOrder).
-        join(MoveOrder.route).
+        join(MoveOrder.request).
+        join(MoveRequest.route).
         where(SupplyRoute.sender == stockpoint)
     )
     return session.scalars(stmt).all()
@@ -267,8 +264,9 @@ def order_filter_v2(session, stockpoint, start_date, end_date, incoming: bool, o
 
 
 def execute_move(session: Session, move: MoveOrder):
-    sender: StockPoint = move.route.sender
-    receiver: StockPoint = move.route.receiver
+    request = move.request
+    sender: StockPoint = request.route.sender
+    receiver: StockPoint = request.route.receiver
 
     # Validity checks
     if move.completion_status != 0:
@@ -281,6 +279,7 @@ def execute_move(session: Session, move: MoveOrder):
         sender.current_stock -= move.quantity
         receiver.current_stock += move.quantity
         move.completion_status = 1
+        request.quantity_delivered += move.quantity
 
 
 def add_mock_order_history(session: Session, route: SupplyRoute):
