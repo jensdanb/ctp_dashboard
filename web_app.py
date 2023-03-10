@@ -1,8 +1,15 @@
+import pandas as pd
+
+from sandbox import *
 from typing import List
-from h2o_wave import Q, main, app, ui
+from h2o_wave import Q, main, app, ui, data
 
 _id = 0
 ppath = '/home/jensd/PycharmProjects/ctp_dashboard'
+
+current_date = date.today()
+main_engine = create_engine("sqlite+pysqlite:///ctp_database.sqlite", echo=False, future=True)
+# reset_db(engine)
 
 class TodoItem:
     def __init__(self, text):
@@ -15,7 +22,8 @@ class TodoItem:
 
 @app('/todo', mode='multicast')
 async def serve(q: Q):
-    # ToDo card
+    # To_do card.
+    # On startup all conditions are False and it starts at else: show_todos(q)
     if q.args.new_todo:
         new_todo(q)
     elif q.args.add_todo:
@@ -25,10 +33,36 @@ async def serve(q: Q):
     else:
         show_todos(q)
 
+    # Plot card
+    with Session(main_engine) as session:
+        premake_db(session, CcrpBase)
+        stockpoint_1501 = get_all(session, table=StockPoint)[1]
+        sub_df = ProjectionATP(session, stockpoint_1501).df.loc[:, ['demand', 'supply']].iloc[:30]
+    show_plot(q, sub_df)
+
     await q.page.save()
 
 
-to_do_box = '1 1 3 5'
+to_do_box = '1 1 2 3'
+plot_box = '1 4 5 6'
+
+
+def show_plot(q: Q, df: pd.DataFrame):
+    q.page['example'] = ui.plot_card(
+        box=plot_box,
+        title='Inventory',
+        data=data(
+            fields=['day'] + df.columns.tolist(),
+            rows=[[i for i in row] for row in df.itertuples()],
+            pack=True
+        ),
+        plot=ui.plot(marks=[ui.mark(
+            type='interval',
+            x='=day', x_title='Date',
+            y='=demand', y_title='Demand',
+        )])
+    )
+
 
 def show_todos(q: Q):
     # Get items for this user
@@ -38,6 +72,7 @@ def show_todos(q: Q):
     if todos is None:
         q.user.todos = todos = [TodoItem('Do this'), TodoItem('Do that'), TodoItem('Do something else')]
 
+    # Update completion states
     for todo in todos:
         if todo.id in q.args:
             todo.done = q.args[todo.id]
@@ -47,7 +82,7 @@ def show_todos(q: Q):
     done = [ui.checkbox(name=todo.id, label=todo.text, value=True, trigger=True) for todo in todos if todo.done]
 
     # Display them
-    q.page['form'] = ui.form_card(box=to_do_box, items=[
+    q.page['to_do_card'] = ui.form_card(box=to_do_box, items=[
         ui.text_l('To Do'),
         ui.button(name='new_todo', label='New To Do...', primary=True),
         *not_done,
@@ -59,7 +94,7 @@ def show_todos(q: Q):
 
 def new_todo(q: Q):
     # Display an input form
-    q.page['form'] = ui.form_card(box=to_do_box, items=[
+    q.page['to_do_card'] = ui.form_card(box=to_do_box, items=[
         ui.text_l('New To Do'),
         ui.textbox(name='new_todo_text', label='What needs to be done?'),
         ui.buttons([
@@ -71,7 +106,6 @@ def new_todo(q: Q):
 
 def add_todo(q: Q):
     q.user.todos.insert(0, TodoItem(q.args.new_todo_text or 'Untitled'))
-
     # Then go back to our list
     show_todos(q)
 
