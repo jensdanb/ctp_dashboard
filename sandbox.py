@@ -61,16 +61,17 @@ if __name__ == "__main__":
     with Session(main_engine) as init_session:
         premake_db(init_session, CcrpBase)
 
-    check_CTP_plots(main_engine, global_date)
+    # check_CTP_plots(main_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
     with Session(main_engine) as requests_generation_session:
         # Setup
         route = get_all(requests_generation_session, SupplyRoute)[1] # Second route in the DB
         first_date = date.today() - timedelta(days=365)
+        last_date = first_date + timedelta(days=350)
 
         # Generate an order history
-        new_orders = generate_random_requests(20, 1, first_date, 350, 8, random.betavariate, 2, 5, rescale=200)
+        new_orders = generate_random_requests(20, 1, first_date, last_date, 8, random.betavariate, 2, 5, rescale=200)
         route.move_requests += new_orders
         requests_generation_session.commit()
 
