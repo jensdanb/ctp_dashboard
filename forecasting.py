@@ -25,7 +25,8 @@ def generate_random_requests(n, status, earliest_reg_date, last_reg_date, avg_re
 
         reg_date = earliest_reg_date + timedelta(days=random.randint(0, reg_period.days))
         a, b = 2, 4  # Alpha and Beta for the beta distribution
-        requested_delivery_time = timedelta(days=int(random.betavariate(a, b)) * ((a + b)/ a) * avg_requested_delivery_time)
+        requested_delivery_time = timedelta(days=int(float(((a + b)/ a) * random.betavariate(a, b)) * avg_requested_delivery_time))
+        # It is necessary to cast to float first, as int() can cast the factors inside () before calc is completed.
         requested_delivery_date = reg_date + requested_delivery_time
         quantity = quantity_distribution(*args)
         if rescale:
