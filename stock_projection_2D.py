@@ -7,15 +7,16 @@ from matplotlib import pyplot as plt
 
 
 class StockProjection:
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
 
-    def __init__(self, session: Session, stockpoint: StockPoint, *start_date: date):
+        if not isinstance(start_date, date) or not date.today() <= start_date <= date.today() + timedelta(days=31):
+            raise TypeError('start_date must be a date between today and 31 days forward')
+
+        if not isinstance(plot_period, int) or not 3 <= plot_period <= 365:
+            raise AttributeError('plot_period must be an integer between 3 and 365')
+
         # start and end of projection
-        if start_date:
-            if not date.today() <= start_date[0] < date.today() + timedelta(days=31):
-                raise ValueError('Start day must be between today and today+31 days.')
-            self.start_date = start_date[0]
-        else:
-            self.start_date = date.today()
+        self.start_date = start_date
         self.duration = 365
         self.final_date = self.start_date + timedelta(days=self.duration)
         self.dates_range = pd.date_range(self.start_date, self.final_date)
@@ -72,9 +73,9 @@ def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
 
 
 class ProjectionATP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, *start_date):
-        super().__init__(session, stockpoint, *start_date)
-        self.plot = self.make_plot(24)
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
+        super().__init__(session, stockpoint, start_date, plot_period)
+        self.plot = self.make_plot(plot_period)
 
     def make_plot(self, duration: int):
         plot_window = self.df.loc[self.start_date:self.start_date + timedelta(days=duration)].copy()
@@ -108,12 +109,12 @@ class ProjectionATP(StockProjection):
 
 
 class ProjectionCTP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, *start_date):
-        super().__init__(session, stockpoint, *start_date)
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
+        super().__init__(session, stockpoint, start_date, plot_period)
         incoming_routes = get_incoming_routes(session, stockpoint)
         for route in incoming_routes:
             self.project_ctp(route)
-        self.plot = self.make_plot(24)
+        self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, route: SupplyRoute):
         receiver = route.receiver

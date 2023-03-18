@@ -61,7 +61,7 @@ if __name__ == "__main__":
     with Session(main_engine) as init_session:
         premake_db(init_session, CcrpBase)
 
-    # check_CTP_plots(main_engine, global_date)
+    check_CTP_plots(main_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
     with Session(main_engine) as requests_generation_session:
