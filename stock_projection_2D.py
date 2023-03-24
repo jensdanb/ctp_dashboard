@@ -7,16 +7,16 @@ from matplotlib import pyplot as plt
 
 
 class StockProjection:
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
 
-        if not isinstance(start_date, date) or not date.today() <= start_date <= date.today() + timedelta(days=31):
-            raise TypeError('start_date must be a date between today and 31 days forward')
+        if not start_date_offset in range(-1, 32):
+            raise TypeError('start_date_offset must be a date between today and 31 days forward')
 
-        if not isinstance(plot_period, int) or not 3 <= plot_period <= 365:
+        if not plot_period in range(3, 366):
             raise AttributeError('plot_period must be an integer between 3 and 365')
 
         # start and end of projection
-        self.start_date = start_date
+        self.start_date = date.today() + timedelta(days=start_date_offset)
         self.duration = 365
         self.final_date = self.start_date + timedelta(days=self.duration)
         self.dates_range = pd.date_range(self.start_date, self.final_date)
@@ -27,15 +27,16 @@ class StockProjection:
         self.starting_stock = stockpoint.current_stock
 
         # known events in scope:
-        planned_receipts = order_filter_v2(session, stockpoint, self.start_date, self.final_date, incoming=True,
-                                           outgoing=False)
-        planned_sends = order_filter_v2(session, stockpoint, self.start_date, self.final_date, incoming=False,
-                                        outgoing=True)
+        planned_receipts = order_filter(session, stockpoint, self.start_date, self.final_date, incoming=True,
+                                        outgoing=False)
+        planned_sends = order_filter(session, stockpoint, self.start_date, self.final_date, incoming=False,
+                                     outgoing=True)
+        self.included_moves = [order.__dict__ for order in planned_sends + planned_receipts]
 
         # Main projection dataframe
         self.df = self.project_inventory(planned_receipts,
                                          planned_sends)  # columns: "known_demand", "known_supply", "inventory", "ATP"
-        self.df["ATP"] = minimum_future(self.df["inventory"])
+
 
     def __repr__(self):
         return f"Stock for stockpoint {self.stockpoint_id} ({self.stockpoint_name}), projected from {self.start_date}."
@@ -45,9 +46,9 @@ class StockProjection:
                           columns=["demand", "supply"])
 
         for receipt in planned_receipts:
-            df.loc[receipt.date.isoformat(), ["supply"]] += receipt.quantity
+            df.loc[receipt.order_date.isoformat(), ["supply"]] += receipt.quantity
         for send in planned_sends:
-            df.loc[send.date.isoformat(), ["demand"]] -= send.quantity
+            df.loc[send.order_date.isoformat(), ["demand"]] -= send.quantity
         inventory = np.cumsum(df["supply"]) + np.cumsum(df["demand"])
 
         df["inventory"] = np.add(inventory, self.starting_stock)
@@ -73,8 +74,9 @@ def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
 
 
 class ProjectionATP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
-        super().__init__(session, stockpoint, start_date, plot_period)
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
+        super().__init__(session, stockpoint, start_date_offset, plot_period)
+        self.df["ATP"] = minimum_future(self.df["inventory"])
         self.plot = self.make_plot(plot_period)
 
     def make_plot(self, duration: int):
@@ -109,10 +111,10 @@ class ProjectionATP(StockProjection):
 
 
 class ProjectionCTP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date=date.today(), plot_period=24):
-        super().__init__(session, stockpoint, start_date, plot_period)
-        incoming_routes = get_incoming_routes(session, stockpoint)
-        for route in incoming_routes:
+    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
+        super().__init__(session, stockpoint, start_date_offset, plot_period)
+        self.df["ATP"] = minimum_future(self.df["inventory"])
+        for route in get_incoming_routes(session, stockpoint):
             self.project_ctp(route)
         self.plot = self.make_plot(plot_period)
 

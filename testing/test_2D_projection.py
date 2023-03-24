@@ -14,19 +14,29 @@ def strictly_positive_and_increasing(values: pd.Series):
     return positive and increasing
 
 
+def universal_projection_assertions(session, projection):
+    stockpoint_in_db = get_by_name(session, StockPoint, projection.stockpoint_name)
+    # Consistency with database:
+    assert projection.stockpoint_id == stockpoint_in_db.id
+    assert projection.start
+
+
+    assert projection.start_date < projection.final_date
+    assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
+
 class TestStockProjection:
     # Setup inputs
 
     def test_initialization(self):
+        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as test_session:
-            run_with_session(test_engine, add_from_class, input_class=CcrpBase)
             all_stockpoints = get_all(test_session, StockPoint)
 
             """ invalid arguments raise exceptions: """
             invalid_sessions = [test_engine, StockPoint, None, "foo"]
             for invalid_session in invalid_sessions:
                 with pytest.raises(AttributeError):
-                    projection = ProjectionATP(invalid_session, all_stockpoints[0])
+                    projection = StockProjection(invalid_session, all_stockpoints[0])
 
             invalid_db_objects = []
             for table in all_db_classes - {StockPoint}:
@@ -34,24 +44,19 @@ class TestStockProjection:
 
             for invalid_object in invalid_db_objects:
                 with pytest.raises(AttributeError) as exc_info:
-                    projection = ProjectionATP(test_session, invalid_object)
+                    projection = StockProjection(test_session, invalid_object)
 
             """ valid arguments do not raise exceptions: """
             for stockpoint in all_stockpoints:
-                projection = ProjectionATP(test_session, stockpoint)
-
-                """ logic and content is correct for all stockpoints """
-                assert projection.start_date < projection.final_date
-                assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
-                assert projection.plot
+                projection = StockProjection(test_session, stockpoint)
 
         Base.metadata.drop_all(test_engine)
         Base.metadata.create_all(test_engine)
 
     def test_post_init(self):
         # basic init, repeat of test_initialization
+        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as test_session:
-            run_with_session(test_engine, add_from_class, input_class=CcrpBase)
             test_sp = get_by_name(test_session, StockPoint, "crp_1501")
             projection = ProjectionATP(test_session, test_sp)
 
@@ -60,14 +65,37 @@ class TestStockProjection:
             print(test_sp)
         # yet the projection is still available:
         assert projection
+
         # and we can "reconnect" with a new session and the name attribute
         with Session(test_engine) as test_session:
             new_sp = get_by_name(test_session, StockPoint, projection.stockpoint_name)
             new_projection = ProjectionATP(test_session, new_sp)
             assert new_projection.df.equals(projection.df)
 
-            # ATP is strictly positive and increasing
-            assert strictly_positive_and_increasing(projection.df['ATP'])
+        # Finally, we test that "business logic" is correct for all stockpoints:
+        with Session(test_engine) as test_session:
+            all_stockpoints = get_all(test_session, StockPoint)
+            for stockpoint in all_stockpoints:
+
+                projection = StockProjection(test_session, stockpoint)
+                assert projection.start_date < projection.final_date
+                assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
+
+        Base.metadata.drop_all(test_engine)
+        Base.metadata.create_all(test_engine)
+
+
+class TestATP:
+    def test_atp(self):
+        # Arrange setup
+        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        with Session(test_engine) as test_session:
+            all_stockpoints = get_all(test_session, StockPoint)
+
+            for stockpoint in all_stockpoints:
+                projection = ProjectionATP(test_session, stockpoint)
+                assert projection.plot
+                assert strictly_positive_and_increasing(projection.df['ATP'])
 
         Base.metadata.drop_all(test_engine)
         Base.metadata.create_all(test_engine)
@@ -76,8 +104,9 @@ class TestStockProjection:
 class TestCTP:
     def test_ctp(self):
         # Arrange setup
+        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as init_sesssion:
-            run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+
             test_sp = get_by_name(init_sesssion, StockPoint, "crp_1501")
             projection = ProjectionCTP(init_sesssion, test_sp)
 
