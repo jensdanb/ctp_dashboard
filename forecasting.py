@@ -31,7 +31,7 @@ def generate_random_requests(n, status, earliest_reg_date, last_reg_date, avg_re
         quantity = quantity_distribution(*args)
         if rescale:
             quantity = int(quantity * rescale['rescale'])
-        requests.append(MoveRequest(date_of_registration=reg_date, expected_delivery_date=requested_delivery_date, quantity=quantity, quantity_delivered=quantity*status))
+        requests.append(MoveRequest(date_of_registration=reg_date, requested_delivery_date=requested_delivery_date, quantity=quantity, quantity_delivered=quantity*status))
 
     return requests
 

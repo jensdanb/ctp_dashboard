@@ -108,8 +108,8 @@ class MoveRequest(Base):
     route: Mapped[SupplyRoute] = relationship(back_populates="move_requests")
 
     # Variables
-    date_of_registration = Column(Date)  # Insert current-start_date
-    expected_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
+    date_of_registration = Column(Date)  # Insert current-start_date_offset
+    requested_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
 
     quantity: Mapped[int]
     move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="request")
@@ -117,7 +117,7 @@ class MoveRequest(Base):
 
     def __repr__(self):
         return f"Request {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
-               f"{self.route.receiver.name} for delivery by {self.expected_delivery_date}."
+               f"{self.route.receiver.name} for delivery by {self.requested_delivery_date}."
 
 
 class MoveOrder(Base):
@@ -133,9 +133,8 @@ class MoveOrder(Base):
     # Variables
     quantity: Mapped[int]
 
-    date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
+    order_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
     completion_status: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
-
 
 
 all_db_classes = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}  # A set.
@@ -166,6 +165,11 @@ def run_with_session(engine, func, **kwargs):
             return return_statement
 
 
+def reset_db(engine):
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+
+
 def add_from_class(session, input_class):
     class_instance = input_class()  # Create a new object of class input_class
     session.add(class_instance.product)
@@ -175,11 +179,50 @@ def add_from_class(session, input_class):
 def premake_db(session, source_class):
     if not session.scalars(select(Product)).all():
         run_in_session(session, add_from_class, input_class=source_class)
+""" Database Modification functions """
 
 
-def reset_db(engine):
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+def add_request(session, route, delivery_time, quantity):
+    reg_date = date.today()
+    req_date = reg_date + timedelta(days=delivery_time)
+
+    request = MoveRequest(route=route, date_of_registration=reg_date, requested_delivery_date=req_date, quantity=quantity)
+    session.add(request)
+
+
+def add_move_order(session, request, delivery_date, quantity):
+    order = MoveOrder(request=request, order_date=delivery_date)
+
+
+
+
+def execute_move(session: Session, move: MoveOrder):
+    request = move.request
+    sender: StockPoint = request.route.sender
+    receiver: StockPoint = request.route.receiver
+
+    # Validity checks
+    if move.completion_status != 0:
+        raise ValueError("Cannot execute. Order is completed or invalid. ")
+    elif not sender.current_stock >= move.quantity:
+        raise ValueError("Cannot move more than the sender has!")
+
+    # Execution
+    else:
+        sender.current_stock -= move.quantity
+        receiver.current_stock += move.quantity
+        move.completion_status = 1
+        request.quantity_delivered += move.quantity
+
+
+def add_mock_order_history(session: Session, route: SupplyRoute):
+    pass
+
+
+def execute_scheduled(session, date):
+    scheduled_move_orders = get_scheduled_orders(session, date)
+    for order in scheduled_move_orders:
+        execute_move(session, order)
 
 
 """ Querying functions: """
@@ -196,7 +239,7 @@ def get_all(session, table):
 
 
 def get_scheduled_orders(session, day: date):
-    stmt = select(MoveOrder).where(MoveOrder.date == day).where(MoveOrder.completion_status == 0)
+    stmt = select(MoveOrder).where(MoveOrder.order_date == day).where(MoveOrder.completion_status == 0)
     return session.scalars(stmt).all()
 
 
@@ -230,7 +273,7 @@ def get_outgoing_move_orders(session, stockpoint):
     return session.scalars(stmt).all()
 
 
-def pending_orders(orders):
+def uncompleted_orders(orders: list[MoveOrder]):
     return list(filter(lambda order: order.completion_status == 0, orders))
 
 
@@ -238,7 +281,7 @@ def filter_by_date(orders, start_date: date, end_date: date):
     if end_date < start_date:
         raise ValueError(f"End date ({end_date}) cannot be earlier than Start date ({start_date})")
     else:
-        return list(filter(lambda order: start_date <= order.date <= end_date, orders))
+        return list(filter(lambda order: start_date <= order.order_date <= end_date, orders))
 
 
 def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool):
@@ -247,46 +290,5 @@ def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outg
         orders += get_incoming_move_orders(session, stockpoint)
     if outgoing:
         orders += get_outgoing_move_orders(session, stockpoint)
-    return filter_by_date(orders, start_date, end_date)
-
-
-def order_filter_v2(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool):
-    orders = []
-    if incoming:
-        orders += get_incoming_move_orders(session, stockpoint)
-    if outgoing:
-        orders += get_outgoing_move_orders(session, stockpoint)
     orders = filter_by_date(orders, start_date, end_date)
-    return pending_orders(orders)
-
-
-""" Database Modification functions """
-
-
-def execute_move(session: Session, move: MoveOrder):
-    request = move.request
-    sender: StockPoint = request.route.sender
-    receiver: StockPoint = request.route.receiver
-
-    # Validity checks
-    if move.completion_status != 0:
-        raise ValueError("Cannot execute. Order is completed or invalid. ")
-    elif not sender.current_stock >= move.quantity:
-        raise ValueError("Cannot move more than the sender has!")
-
-    # Execution
-    else:
-        sender.current_stock -= move.quantity
-        receiver.current_stock += move.quantity
-        move.completion_status = 1
-        request.quantity_delivered += move.quantity
-
-
-def add_mock_order_history(session: Session, route: SupplyRoute):
-    pass
-
-
-def execute_scheduled(session, date):
-    scheduled_move_orders = get_scheduled_orders(session, date)
-    for order in scheduled_move_orders:
-        execute_move(session, order)
+    return uncompleted_orders(orders)

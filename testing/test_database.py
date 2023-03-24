@@ -57,12 +57,12 @@ class TestDBModel:
 
                 for start_date in early_dates:
 
-                    # end_date < start_date should be invalid
+                    # end_date < start_date_offset should be invalid
                     for end_date in list(filter(lambda d: d < start_date, later_dates)):
                         with pytest.raises(ValueError) as exc_info:
                             order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
 
-                    # start_date <= end_date ensured by filter, proceed to test:
+                    # start_date_offset <= end_date ensured by filter, proceed to test:
                     for end_date in list(filter(lambda d: d >= start_date, later_dates)):
                         incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=False)
                         outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)

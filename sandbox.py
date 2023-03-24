@@ -56,39 +56,39 @@ def check_CTP_plots(engine, day):
 
 if __name__ == "__main__":
     global_date = date.today()
-    main_engine = create_engine("sqlite+pysqlite:///ctp_database.sqlite", echo=False, future=True)
-    Base.metadata.create_all(main_engine)
-    with Session(main_engine) as init_session:
+    sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
+    Base.metadata.create_all(sandbox_engine)
+    with Session(sandbox_engine) as init_session:
         premake_db(init_session, CcrpBase)
 
-    check_CTP_plots(main_engine, global_date)
+    check_CTP_plots(sandbox_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
 
-    with Session(main_engine) as requests_generation_session:
+    with Session(sandbox_engine) as requests_generation_session:
         # Setup
         route = get_all(requests_generation_session, SupplyRoute)[1] # Second route in the DB
         first_date = date.today() - timedelta(days=365)
         last_date = first_date + timedelta(days=350)
 
         # Generate an order history
-        new_orders = generate_random_requests(20, 1, first_date, last_date, 8, random.betavariate, 2, 5, rescale=200)
-        route.move_requests += new_orders
+        new_requests = generate_random_requests(20, 1, first_date, last_date, 8, random.betavariate, 2, 5, rescale=200)
+        route.move_requests += new_requests
         requests_generation_session.commit()
 
-    with Session(main_engine) as history_inspection_session:
+    with Session(sandbox_engine) as history_inspection_session:
         # Find the content made in previous session
         route = get_all(history_inspection_session, SupplyRoute)[1]
-        stmt = select(MoveRequest).where(MoveRequest.quantity_delivered == MoveRequest.quantity).where(MoveRequest.expected_delivery_date <= date.today())
+        stmt = select(MoveRequest).where(MoveRequest.quantity_delivered == MoveRequest.quantity).where(MoveRequest.requested_delivery_date <= date.today())
         completed_orders = history_inspection_session.scalars(stmt).all()
 
         # Inspect order history
         print(route.move_requests[-1])
         for request in completed_orders:
-            delivery_time = request.expected_delivery_date - request.date_of_registration
+            delivery_time = request.requested_delivery_date - request.date_of_registration
             print(f'Delivery: {delivery_time.days} days. Quantity: {request.quantity} units.')
 
         # Plot
 
 
 
-    reset_db(main_engine)
+    reset_db(sandbox_engine)
