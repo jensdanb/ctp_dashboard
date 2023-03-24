@@ -1,9 +1,13 @@
-from sandbox import *
+from database_model import *
+from db_premade_content_for_testing import CcrpBase
+from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
 
+import pandas as pd
 from typing import List
 import os
 import uuid
 from h2o_wave import Q, main, app, ui, data
+
 
 _id = 0
 ppath = '/home/jensd/PycharmProjects/ctp_dashboard'
@@ -11,6 +15,7 @@ ppath = '/home/jensd/PycharmProjects/ctp_dashboard'
 current_date = date.today()
 server_engine = create_engine("sqlite+pysqlite:///server_db.sqlite", echo=False, future=True)
 with Session(server_engine) as session:
+    reset_db(server_engine)
     premake_db(session, CcrpBase)
 
 # reset_db(engine)
