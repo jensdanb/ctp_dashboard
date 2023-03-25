@@ -38,6 +38,25 @@ class TestDBModel:
 
             test_session.commit()
 
+        # Check content in new session
+        with Session(test_engine) as content_test_session:
+            for db_table in all_db_classes:
+                table_contents = get_all(content_test_session, db_table)
+                assert table_contents != []
+
+            premade_product = get_by_name(content_test_session, Product, "ccrp_ip")
+            db_products = get_all(content_test_session, Product)
+            assert premade_product in db_products
+
+            stockpoint_names_in_db = [stockpoint.name for stockpoint in get_all(content_test_session, StockPoint)]
+            assert stockpoint_names_in_db == ["crp_raw", "crp_1501", "crp_shipped"]
+
+            routes = get_all(content_test_session, SupplyRoute)
+            assert len(routes) == 2
+            assert routes[0].sender.name == stockpoint_names_in_db[0]
+            assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
+            assert routes[1].receiver.name == stockpoint_names_in_db[2]
+
     def test_order_filtering(self):
         with Session(test_engine) as test_session:
 
@@ -57,13 +76,13 @@ class TestDBModel:
 
                 for start_date in early_dates:
 
-                    # end_date < start_date_offset should be invalid
-                    for end_date in list(filter(lambda d: d < start_date, later_dates)):
+                    invalid_end_dates = list(filter(lambda d: d < start_date, later_dates))
+                    for end_date in invalid_end_dates:
                         with pytest.raises(ValueError) as exc_info:
                             order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
 
-                    # start_date_offset <= end_date ensured by filter, proceed to test:
-                    for end_date in list(filter(lambda d: d >= start_date, later_dates)):
+                    valid_end_dates = list(filter(lambda d: d >= start_date, later_dates))
+                    for end_date in valid_end_dates:
                         incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=False)
                         outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)
                         all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)

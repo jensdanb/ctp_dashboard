@@ -176,9 +176,11 @@ def add_from_class(session, input_class):
     # if class_instance not in session.scalars(select(Product)).all():
 
 
-def premake_db(session, source_class):
+def add_from_class_if_db_is_empty(session, input_class):
     if not session.scalars(select(Product)).all():
-        run_in_session(session, add_from_class, input_class=source_class)
+        run_in_session(session, add_from_class, input_class=input_class)
+
+
 """ Database Modification functions """
 
 
