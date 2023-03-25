@@ -14,9 +14,9 @@ ppath = '/home/jensd/PycharmProjects/ctp_dashboard'
 
 current_date = date.today()
 server_engine = create_engine("sqlite+pysqlite:///server_db.sqlite", echo=False, future=True)
+Base.metadata.create_all(server_engine)
 with Session(server_engine) as session:
-    reset_db(server_engine)
-    premake_db(session, CcrpBase)
+    add_from_class_if_db_is_empty(session, CcrpBase)
 
 # reset_db(engine)
 
@@ -58,16 +58,16 @@ async def serve(q: Q):
     await q.page.save()
 
 
-to_do_box = '1 1 2 3'
-plot_control_box = '3 1 2 3'
-plot_box = '1 4 7 4'
+to_do_box = '1 1 2 4'
+plot_control_box = '3 1 2 4'
+plot_box = '1 5 7 4'
 
 
 def show_controls(q: Q):
     q.page['controls'] = ui.form_card(
         box=plot_control_box,
         items=[
-            ui.text_xl("Lets make some plots"),
+            ui.text_xl("Let's make some plots"),
             ui.button(name='make_plot', label='Make plot', primary=True)
             # ui.slider(name='alpha', label='Alpha', min=5, max=100, step=1, value=q.client.alpha, trigger=True),
         ]

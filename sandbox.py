@@ -59,7 +59,7 @@ if __name__ == "__main__":
     sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
-        premake_db(init_session, CcrpBase)
+        add_from_class_if_db_is_empty(init_session, CcrpBase)
 
     check_CTP_plots(sandbox_engine, global_date)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
