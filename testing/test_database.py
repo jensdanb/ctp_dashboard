@@ -15,48 +15,70 @@ def capture_sql_exception(func, *args, **kwargs):
 
 class TestConfig:
     def test_config(self):
-        for table in all_db_classes:
-            assert issubclass(table, Base)
+        inspector = inspect(test_engine)
+
+        for orm_class in expected_db_orms:
+            assert issubclass(orm_class, Base)
+            assert orm_class.__tablename__ in inspector.get_table_names()
+
+        with Session(test_engine) as test_config_session:
+            # DB starts empty
+            for orm_class in expected_db_orms:
+                data_content = test_config_session.scalars(select(orm_class)).all()
+                assert data_content == []
+
+            # Can add content
+            product_a = Product(name='product_a', price='50')
+            stockpoint_a = StockPoint(product=product_a, name='stockpoint_a', current_stock=10)
+            test_config_session.add_all([product_a, stockpoint_a])
+            test_config_session.commit()
+
+        # DB content persists to new session
+        with Session(test_engine) as test_config_session_b:
+            stockpoints_in_db = test_config_session_b.scalars(select(StockPoint)).all()
+            assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'product_a'
+
+        # DB content is emptied with reset()
+        reset_db(test_engine)
+        with Session(test_engine) as test_config_session_c:
+            stockpoints_in_db = test_config_session_c.scalars(select(StockPoint)).all()
+            assert stockpoints_in_db == []
 
 
-class TestDBModel:
+class TestDBSupportFunctions:
     def test_add_from_class(self):
-        with Session(test_engine) as test_session:
-
-            # Ensure new database starts empty
-            for db_table in all_db_classes:
-                table_contents = get_all(test_session, db_table)
-                assert table_contents == []
-
+        with Session(test_engine) as test_afc_session_a:
             # Fill
-            add_from_class(test_session, CcrpBase)
+            add_from_class(test_afc_session_a, CcrpBase)
 
             # Ensure it's been filled
-            for db_table in all_db_classes:
-                table_contents = get_all(test_session, db_table)
+            for table in expected_db_orms:
+                table_contents = get_all(test_afc_session_a, table)
                 assert isinstance(table_contents, list) and table_contents != []
 
-            test_session.commit()
+            test_afc_session_a.commit()
 
         # Check content in new session
-        with Session(test_engine) as content_test_session:
-            for db_table in all_db_classes:
-                table_contents = get_all(content_test_session, db_table)
+        with Session(test_engine) as test_afc_session_b:
+            for table in expected_db_orms:
+                table_contents = get_all(test_afc_session_b, table)
                 assert table_contents != []
 
-            premade_product = get_by_name(content_test_session, Product, "ccrp_ip")
-            db_products = get_all(content_test_session, Product)
+            premade_product = get_by_name(test_afc_session_b, Product, "ccrp_ip")
+            db_products = get_all(test_afc_session_b, Product)
             assert premade_product in db_products
 
-            stockpoint_names_in_db = [stockpoint.name for stockpoint in get_all(content_test_session, StockPoint)]
+            stockpoint_names_in_db = [stockpoint.name for stockpoint in get_all(test_afc_session_b, StockPoint)]
             assert stockpoint_names_in_db == ["crp_raw", "crp_1501", "crp_shipped"]
 
-            routes = get_all(content_test_session, SupplyRoute)
+            routes = get_all(test_afc_session_b, SupplyRoute)
             assert len(routes) == 2
             assert routes[0].sender.name == stockpoint_names_in_db[0]
             assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
             assert routes[1].receiver.name == stockpoint_names_in_db[2]
 
+
+class TestQueryFilters:
     def test_order_filtering(self):
         with Session(test_engine) as test_session:
 
@@ -98,7 +120,7 @@ class TestDBModel:
             # Does not commit
 
 
-class TestDBfunctions:
+class TestMoveOrders:
     def test_execute_move(self):
         with Session(test_engine) as test_session_1:
             # Status before execution
@@ -162,7 +184,7 @@ class TestDBfunctions:
         test_session = Session(test_engine)
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
 
-        for db_table in all_db_classes:
+        for db_table in expected_db_orms:
             table_contents = get_all(test_session, db_table)
             assert isinstance(table_contents, list) and table_contents != []
         route = get_all(test_session, SupplyRoute)[0]  # Route nr. [0] is from bulk to finished

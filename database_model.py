@@ -4,7 +4,7 @@ from sqlalchemy import Column, String, Table, Date
 from sqlalchemy import ForeignKey
 from sqlalchemy import create_engine, select, exc
 from sqlalchemy import CheckConstraint, UniqueConstraint
-from sqlalchemy import update
+from sqlalchemy import update, inspect
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm import declarative_base
@@ -137,13 +137,13 @@ class MoveOrder(Base):
     completion_status: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
 
 
-all_db_classes = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}  # A set.
+expected_db_orms = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}  # A set.
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
 Base.metadata.create_all(test_engine)
 
 
-""" Core Database functions """
+""" Core database functions """
 
 
 def run_in_session(session, func, **kwargs):
@@ -170,6 +170,19 @@ def reset_db(engine):
     Base.metadata.create_all(engine)
 
 
+def get_by_name(session, table, element_name: str):
+    stmt = select(table).where(table.name == element_name)
+    return session.scalars(stmt).one()
+
+
+def get_all(session, table):
+    stmt = select(table)
+    return session.scalars(stmt).all()
+
+
+""" Database modification functions """
+
+
 def add_from_class(session, input_class):
     class_instance = input_class()  # Create a new object of class input_class
     session.add(class_instance.product)
@@ -179,9 +192,6 @@ def add_from_class(session, input_class):
 def add_from_class_if_db_is_empty(session, input_class):
     if not session.scalars(select(Product)).all():
         run_in_session(session, add_from_class, input_class=input_class)
-
-
-""" Database Modification functions """
 
 
 def add_request(session, route, delivery_time, quantity):
@@ -194,8 +204,6 @@ def add_request(session, route, delivery_time, quantity):
 
 def add_move_order(session, request, delivery_date, quantity):
     order = MoveOrder(request=request, order_date=delivery_date)
-
-
 
 
 def execute_move(session: Session, move: MoveOrder):
@@ -227,17 +235,7 @@ def execute_scheduled(session, date):
         execute_move(session, order)
 
 
-""" Querying functions: """
-
-
-def get_by_name(session, table, element_name: str):
-    stmt = select(table).where(table.name == element_name)
-    return session.scalars(stmt).one()
-
-
-def get_all(session, table):
-    stmt = select(table)
-    return session.scalars(stmt).all()
+""" Filtered queries: """
 
 
 def get_scheduled_orders(session, day: date):
