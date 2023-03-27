@@ -194,16 +194,18 @@ def add_from_class_if_db_is_empty(session, input_class):
         run_in_session(session, add_from_class, input_class=input_class)
 
 
-def add_request(session, route, delivery_time, quantity):
+def add_request(route, delivery_time, quantity):
     reg_date = date.today()
     req_date = reg_date + timedelta(days=delivery_time)
 
     request = MoveRequest(route=route, date_of_registration=reg_date, requested_delivery_date=req_date, quantity=quantity)
-    session.add(request)
+    return request
 
 
-def add_move_order(session, request, delivery_date, quantity):
-    order = MoveOrder(request=request, order_date=delivery_date)
+def fill_request(request):
+    unanswered_request_quantity = request.quantity - sum([order.quantity for order in request.move_orders])
+    order = MoveOrder(request=request, order_date=request.requested_delivery_date, quantity=unanswered_request_quantity)
+    return order
 
 
 def execute_move(session: Session, move: MoveOrder):

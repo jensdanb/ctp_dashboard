@@ -86,12 +86,12 @@ class TestQueryFilters:
             all_stockpoints = get_all(test_session, StockPoint)
 
             for stockpoint in all_stockpoints:
-                all_incoming = get_incoming_move_orders(test_session, stockpoint)
-                all_outgoing = get_outgoing_move_orders(test_session, stockpoint)
+                incoming_orders = get_incoming_move_orders(test_session, stockpoint)
+                outgoing_orders = get_outgoing_move_orders(test_session, stockpoint)
 
-                assert set(all_incoming) <= set(all_orders)
-                assert set(all_outgoing) <= set(all_orders)
-                assert set(all_incoming).isdisjoint(set(all_outgoing))
+                assert set(incoming_orders) <= set(all_orders)
+                assert set(outgoing_orders) <= set(all_orders)
+                assert set(incoming_orders).isdisjoint(set(outgoing_orders))
 
                 early_dates = [date.today(), date.today() + timedelta(days=5), date.today() + timedelta(days=30)]
                 later_dates = [date.today() + timedelta(days=5), date.today() + timedelta(days=15), date.today() + timedelta(days=100)]
@@ -109,18 +109,18 @@ class TestQueryFilters:
                         outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)
                         all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
 
-                        assert set(incoming_these_dates) <= set(all_incoming)
-                        assert set(outgoing_these_dates) <= set(all_outgoing)
+                        assert set(incoming_these_dates) <= set(incoming_orders)
+                        assert set(outgoing_these_dates) <= set(outgoing_orders)
                         assert set(all_orders_these_dates) <= set(all_orders)
                         assert set(incoming_these_dates) <= set(all_orders_these_dates) >= set(outgoing_these_dates)
 
                         # assert consistent result between single-step and two-step filtering
-                        assert incoming_these_dates == filter_by_date(all_incoming, start_date, end_date)
-                        assert outgoing_these_dates == filter_by_date(all_outgoing, start_date, end_date)
+                        assert incoming_these_dates == filter_by_date(incoming_orders, start_date, end_date)
+                        assert outgoing_these_dates == filter_by_date(outgoing_orders, start_date, end_date)
             # Does not commit
 
 
-class TestMoveOrders:
+class TestMoveExecution:
     def test_execute_move(self):
         with Session(test_engine) as test_session_1:
             # Status before execution
@@ -136,6 +136,7 @@ class TestMoveOrders:
             # Expected effects
             assert stockpoint.current_stock == pre_stock - order.quantity
             assert order.completion_status == 1
+            assert order.request.quantity_delivered == order.quantity
 
             # Cannot be executed twice
             with pytest.raises(ValueError) as exc_info:
@@ -169,17 +170,46 @@ class TestMoveOrders:
             assert order_2.completion_status == 0
             assert stockpoint.current_stock == 90
 
-            """ Tests for later"""
-            """
-            assert order_2.day == pre_date + timedelta(days=5)
-            # Complete what you can
-            order_2.execute_move('s')
-            assert stockpoint.current_stock == 0
-            assert order_2.completion_status == 1
-            """
+
+class TestNewRequests:
+    def test_add_request(self):
+        with Session(test_engine) as add_request_session:
+            outgoing_route = get_all(add_request_session, SupplyRoute)[-1]
+
+            id_of_last_premade_request = outgoing_route.move_requests[-1].id
+            assert len(outgoing_route.move_requests) == 4
+            new_request = add_request(outgoing_route, 4, 31)
+            add_request_session.add(new_request)
+            assert len(outgoing_route.move_requests) == 5
+
+            add_request_session.commit()
+
+        with Session(test_engine) as add_moves_session:
+            # Ensure we have the new_request from previous session:
+            last_request = get_all(add_moves_session, MoveRequest)[-1]
+            assert last_request.id == id_of_last_premade_request + 1
+
+            # Add MoveOrder that fulfills half the request
+            partial_order = MoveOrder(request=last_request, order_date=date.today() + timedelta(days=2), quantity=last_request.quantity // 2)
+            add_moves_session.add(partial_order)
+
+            # The MoveOrder that automatically fills the remainder
+            fill_order = fill_request(last_request)
+            add_moves_session.add(fill_order)
+            assert partial_order.quantity + fill_order.quantity == last_request.quantity
+
+            # The MoveOrders are promised but not executed. Execute and check that delivery is complete.
+            assert last_request.quantity_delivered == 0
+            execute_move(add_moves_session, partial_order)
+            execute_move(add_moves_session, fill_order)
+            assert last_request.quantity_delivered == last_request.quantity
+
+
         Base.metadata.drop_all(test_engine)
         Base.metadata.create_all(test_engine)
 
+
+class TestOther:
     def test_capability(self):
         test_session = Session(test_engine)
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
