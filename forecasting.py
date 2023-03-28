@@ -2,10 +2,7 @@
 import random
 from database_model import *
 
-
-def generate_random_requests(n, status, earliest_reg_date, last_reg_date, avg_requested_delivery_time,
-                             quantity_distribution, *args, **rescale):
-    """
+"""
     How the random components are made:
 
     Date of registration is uniformly distributed between earliest and last date (from arguments).
@@ -18,6 +15,10 @@ def generate_random_requests(n, status, earliest_reg_date, last_reg_date, avg_re
     Pass the chosen distribution function as an argument, followed by any *args it needs.
     If the distribution by default returns values in its own range, such as 0 < x < 1, include rescale= at the end.
     """
+
+def generate_random_requests(n, status, earliest_reg_date, last_reg_date, avg_requested_delivery_time,
+                             quantity_distribution, *args, **rescale):
+
     requests = []
     reg_period = last_reg_date - earliest_reg_date  # print(type(reg_period), reg_period.days) -> [<class 'datetime.timedelta'>, 350]
 
