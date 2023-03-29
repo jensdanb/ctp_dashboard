@@ -9,17 +9,33 @@ import uuid
 from h2o_wave import Q, main, app, ui, data
 
 
-ppath = '/home/jensd/PycharmProjects/ctp_dashboard'
-
 current_date = date.today()
-server_engine = create_engine("sqlite+pysqlite:///server_db.sqlite", echo=False, future=True)
+server_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
 reset_db(server_engine)
 
-
+plotable_columns = ['demand', 'supply', 'inventory', 'ATP']
+plot_color_dict = {
+    'demand': {
+        'color': 'red',
+        'type': 'interval'
+    },
+    'supply': {
+        'color': 'blue',
+        'type': 'interval'
+    },
+    'inventory': {
+        'color': 'yellow',
+        'type': 'area'
+    },
+    'ATP': {
+        'color': 'green',
+        'type': 'area'
+    }
+}
 
 @app('/ctp', mode='multicast')
 async def serve_ctp(q: Q):
-    # My WebApp starts here
+    """ Runs once, on startup """
     if not q.client.initialized:
         q.client.initialized = True
 
@@ -28,29 +44,32 @@ async def serve_ctp(q: Q):
             init_session.commit()
 
         q.client.plot_length = 12
-        show_db_controls(q)
-        show_plot_controls(q)
 
+    """ Rerun on user action """
     stockpoint = run_with_session(server_engine, get_all, table=StockPoint)[1]
+
     if q.args.plot_length is not None:
         q.client.plot_length = q.args.plot_length
 
-    # Database controls triggered
+    if q.args.plot_columns is not None:
+        q.client.plot_columns = q.args.plot_columns
+
     if q.args.pre_fill_db:
         with Session(server_engine) as fill_session:
             add_from_class_if_db_is_empty(fill_session, CcrpBase)
-        show_db_controls(q)
 
-    # Plot controls triggered
-    elif q.args.matplotlib_plot:
+    """ UI response on user action """
+    if q.args.matplotlib_plot_button:
         with Session(server_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint, plot_period=q.client.plot_length)
-        await make_plot(q, projection.plot)
-    elif q.args.native_plot:
+        await mpl_plot(q, projection.plot)
+    elif q.args.native_plot_button:
         with Session(server_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint)
-        show_h2o_plot(q, projection, plot_period=q.client.plot_length)
-
+        native_plot(q, projection, plot_period=q.client.plot_length)
+    else:
+        show_db_controls(q)
+        show_plot_controls(q)
 
     await q.page.save()
 
@@ -68,20 +87,53 @@ def show_db_controls(q: Q):
         ]
     )
 
+
 def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
         box=plot_control_box,
         items=[
             ui.text_xl("Plot Controls"),
-            ui.button(name='matplotlib_plot', label='Matplotlib plot'),
-            ui.button(name='native_plot', label='Native plot'),
-            ui.slider(name='plot_length', label='Plot Length', min=10, max=50, step=1, value=q.client.points)
-            # ui.slider(name='alpha', label='Alpha', min=5, max=100, step=1, value=q.client.alpha, trigger=True),
+            ui.button(name='matplotlib_plot_button', label='Matplotlib plot'),
+            ui.button(name='native_plot_button', label='Native plot'),
+            ui.slider(name='plot_length', label='Plot Length', min=10, max=50, step=1, value=q.client.plot_length),
+            ui.checklist(name='plot_columns', label='Choose columns to plot', inline=True,
+                         choices=[ui.choice(name=col_name, label=col_name) for col_name in plotable_columns])
         ]
     )
 
 
-async def make_plot(q: Q, plot):
+def native_plot(q: Q, projection: StockProjection, plot_period: int):
+    selected_columns = q.client.plot_columns
+    plot_frame: pd.DataFrame = projection.df.loc[projection.df.index[:plot_period], selected_columns].copy()
+
+    y_min = min(0, int(plot_frame.to_numpy().min() * 1.1))
+    y_max = max(20, int(plot_frame.to_numpy().max() * 1.1))
+
+    date_strings = [date.isoformat() for date in projection.dates_range[:plot_period]]
+    plot_frame['date'] = [date_string[:10] for date_string in date_strings]
+
+    plot_marks = []
+    for col_name in selected_columns:
+        plot_marks.append(
+            ui.mark(
+                type=plot_color_dict[col_name]['type'],
+                x='=date', x_title='Date',
+                y=f'={col_name}', y_title=f'{col_name}',
+                color=plot_color_dict[col_name]['color'],
+                dodge='auto',
+                y_min=y_min, y_max=y_max
+            )
+        )
+
+    q.page['plot'] = ui.plot_card(
+        box=plot_box,
+        title='Demand/Supply',
+        data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
+        plot=ui.plot(marks=plot_marks)
+    )
+
+
+async def mpl_plot(q: Q, plot):
     q.page['plot'] = ui.markdown_card(box=plot_box, title='Projected inventory', content='')
 
     # Make temporary image file from the matplotlib plot
@@ -94,44 +146,4 @@ async def make_plot(q: Q, plot):
 
     # Display:
     q.page['plot'].content = f'![plot]({image_path})'
-
-
-def show_h2o_plot(q: Q, projection: StockProjection, plot_period: int):
-    df = projection.df.loc[projection.df.index[:plot_period], ['demand', 'supply']].copy()
-
-    # Convert dates to textstrings, and shorten to just date info (10 first characters)
-    date_strings = [date.isoformat() for date in projection.dates_range[:plot_period]]
-    df['date'] = [date_string[:10] for date_string in date_strings]
-
-    y_min = int(min(df['demand']) * 1.1)
-    y_max = int(max(df['supply']) * 1.1)
-
-    q.page['plot'] = ui.plot_card(
-        box=plot_box,
-        title='Demand/Supply',
-        data=data(
-            fields=df.columns.tolist(),
-            rows=df.values.tolist(),
-            pack=True
-        ),
-        plot=ui.plot(marks=[
-            ui.mark(
-                type='interval',
-                x='=date', x_title='Date',
-                y='=demand', y_title='Demand',
-                color='red',
-                dodge='auto',
-                y_min=y_min, y_max=y_max
-            ),
-            ui.mark(
-                type='interval',
-                x='=date',
-                y='=supply',
-                color='blue',
-                dodge='auto',
-                y_min=y_min, y_max=y_max
-            )
-        ])
-    )
-
 
