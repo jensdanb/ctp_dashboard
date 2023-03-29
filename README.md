@@ -9,7 +9,7 @@ ATP is a automatically calculated by most modern MRP and ERP systems in producti
 
 This is a good feature, however; the problem must still be solved that customer B wants his order confirmed and fulfilled, the sooner the better. Should order confirmation date be set to a later date where there is enough ATP? Should the sales employee insert a production order in the ERP system, so that ATP is sufficient and the order can be confirmed? Or ask Production department to insert the production order (rearrange their production schedule if needed) and ask the customer to await response until that process is finished? The latter is the safest option, but can be time-consuming and for routine orders may be unneccesary. 
 
-# This is where Capable-To-Promise (CTP) comes in. 
+## This is where Capable-To-Promise (CTP) comes in. 
 In short, CTP aims to solve this by letting Production define a general capability that they can promise, which takes the form of a volume/time curve. Sales responsible can then confirm customer orders without having to consult production, as long as it is within the promised capability. 
 
 The tricky parts are 
