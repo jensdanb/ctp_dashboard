@@ -13,7 +13,7 @@ current_date = date.today()
 server_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
 reset_db(server_engine)
 
-plotable_columns = ['demand', 'supply', 'inventory', 'ATP']
+plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP_route_1']
 plot_color_dict = {
     'demand': {
         'color': 'red',
@@ -30,7 +30,11 @@ plot_color_dict = {
     'ATP': {
         'color': 'green',
         'type': 'area'
-    }
+    },
+    'CTP_route_1': {
+            'color': 'pink',
+            'type': 'area'
+        }
 }
 
 @app('/ctp', mode='multicast')
@@ -47,7 +51,7 @@ async def serve_ctp(q: Q):
 
     """ Rerun on user action """
     stockpoint = run_with_session(server_engine, get_all, table=StockPoint)[1]
-
+    """ This stockpoint choice is hardcoded. To be replaced by selectable """
     if q.args.plot_length is not None:
         q.client.plot_length = q.args.plot_length
 
@@ -74,8 +78,8 @@ async def serve_ctp(q: Q):
     await q.page.save()
 
 db_box = '1 1 2 4'
-plot_control_box = '3 1 2 4'
-plot_box = '1 5 7 4'
+plot_control_box = '3 1 3 4'
+plot_box = '1 5 6 4'
 
 
 def show_db_controls(q: Q):
@@ -104,33 +108,38 @@ def show_plot_controls(q: Q):
 
 def native_plot(q: Q, projection: StockProjection, plot_period: int):
     selected_columns = q.client.plot_columns
-    plot_frame: pd.DataFrame = projection.df.loc[projection.df.index[:plot_period], selected_columns].copy()
+    if selected_columns:
+        plot_frame: pd.DataFrame = projection.df.loc[projection.df.index[:plot_period], selected_columns].copy()
 
-    y_min = min(0, int(plot_frame.to_numpy().min() * 1.1))
-    y_max = max(20, int(plot_frame.to_numpy().max() * 1.1))
+        y_min = min(0, int(plot_frame.to_numpy().min() * 1.1))
+        y_max = max(20, int(plot_frame.to_numpy().max() * 1.1))
 
-    date_strings = [date.isoformat() for date in projection.dates_range[:plot_period]]
-    plot_frame['date'] = [date_string[:10] for date_string in date_strings]
+        date_strings = [date.isoformat() for date in projection.dates_range[:plot_period]]
+        plot_frame['date'] = [date_string[:10] for date_string in date_strings]
 
-    plot_marks = []
-    for col_name in selected_columns:
-        plot_marks.append(
-            ui.mark(
-                type=plot_color_dict[col_name]['type'],
-                x='=date', x_title='Date',
-                y=f'={col_name}', y_title=f'{col_name}',
-                color=plot_color_dict[col_name]['color'],
-                dodge='auto',
-                y_min=y_min, y_max=y_max
+        plot_marks = []
+        for column_name in selected_columns:
+            type = plot_color_dict[column_name]['type']
+            color = plot_color_dict[column_name]['color']
+            plot_marks.append(
+                ui.mark(
+                    type=type,
+                    x='=date', x_title='Date',
+                    y=f'={column_name}', y_title=f'{column_name}',
+                    color=color,
+                    dodge='auto',
+                    y_min=y_min, y_max=y_max
+                )
             )
-        )
 
-    q.page['plot'] = ui.plot_card(
-        box=plot_box,
-        title='Demand/Supply',
-        data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
-        plot=ui.plot(marks=plot_marks)
-    )
+        q.page['plot'] = ui.plot_card(
+            box=plot_box,
+            title='Demand/Supply',
+            data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
+            plot=ui.plot(marks=plot_marks)
+        )
+    else:
+        show_plot_controls(q)
 
 
 async def mpl_plot(q: Q, plot):
