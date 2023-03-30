@@ -7,7 +7,7 @@ import pandas as pd
 from typing import List
 import os
 import uuid
-from h2o_wave import Q, main, app, ui, data
+from h2o_wave import Q, main, app, ui, data, copy_expando
 
 
 current_date = date.today()
@@ -37,12 +37,7 @@ async def serve_ctp(q: Q):
 
     """ Rerun on user action """
     stockpoint = dbm.run_with_session(server_engine, dbm.get_all, table=dbm.StockPoint)[1]
-    """ This stockpoint choice is hardcoded. To be replaced by selectable """
-    if q.args.plot_length is not None:
-        q.client.plot_length = q.args.plot_length
-
-    if q.args.plot_columns is not None:
-        q.client.plot_columns = q.args.plot_columns
+    copy_expando(q.args, q.client)
 
     if q.args.pre_fill_db:
         with dbm.Session(server_engine) as fill_session:
