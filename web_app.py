@@ -1,7 +1,8 @@
-from database_model import *
+import database_model as dbm
 from premade_db_content import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
 
+from datetime import date, timedelta
 import pandas as pd
 from typing import List
 import os
@@ -10,8 +11,8 @@ from h2o_wave import Q, main, app, ui, data
 
 
 current_date = date.today()
-server_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
-reset_db(server_engine)
+server_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
+dbm.reset_db(server_engine)
 
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP_route_1']
 column_plot_styles = {
@@ -28,14 +29,14 @@ async def serve_ctp(q: Q):
     if not q.client.initialized:
         q.client.initialized = True
 
-        with Session(server_engine) as init_session:
-            add_from_class(init_session, CcrpBase)
+        with dbm.Session(server_engine) as init_session:
+            dbm.add_from_class(init_session, CcrpBase)
             init_session.commit()
 
         q.client.plot_length = 12
 
     """ Rerun on user action """
-    stockpoint = run_with_session(server_engine, get_all, table=StockPoint)[1]
+    stockpoint = dbm.run_with_session(server_engine, dbm.get_all, table=dbm.StockPoint)[1]
     """ This stockpoint choice is hardcoded. To be replaced by selectable """
     if q.args.plot_length is not None:
         q.client.plot_length = q.args.plot_length
@@ -44,16 +45,16 @@ async def serve_ctp(q: Q):
         q.client.plot_columns = q.args.plot_columns
 
     if q.args.pre_fill_db:
-        with Session(server_engine) as fill_session:
-            add_from_class_if_db_is_empty(fill_session, CcrpBase)
+        with dbm.Session(server_engine) as fill_session:
+            dbm.add_from_class_if_db_is_empty(fill_session, CcrpBase)
 
     """ UI response on user action """
     if q.args.matplotlib_plot_button:
-        with Session(server_engine) as plot_session:
+        with dbm.Session(server_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint, plot_period=q.client.plot_length)
         await mpl_plot(q, projection.plot)
     elif q.args.native_plot_button:
-        with Session(server_engine) as plot_session:
+        with dbm.Session(server_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint)
         native_plot(q, projection, plot_period=q.client.plot_length)
     else:
