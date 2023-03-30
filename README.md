@@ -31,7 +31,7 @@ The tricky parts are
 
 In addition to the improvement in information flow, the independent Capability curve can be cost analysed. It is made up of components (safety stock, surplus capacity, ...) that have yearly costs which can be calculated. With good sales forecasting data, the expected number of orders that are outside (too large on too short notice) a given capability curve can also be calculated. Thus one can analyze cost reductions, like reducing capacity, against the expected associated costs to lost or delayed sales, to inform decisions on whether capability components should be increased, reduced or maintainted. 
 
-A simple linear CTP can be seen in the image below. In this case there is no uncommitted capacity is until the 15th day, it is already busy with the planned production deliveries (blue bars), and therefore CTP=ATP for most of the period: 
+A simple linear CTP can be seen in the image below. In this case there is no uncommitted capacity until the 15th day, it is already busy with the planned production deliveries (blue bars), and therefore CTP=ATP for most of the period: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228661921-e2788c67-3889-4486-b8f3-6964bc7cb5f8.png)
 
 However, if we look at a longer period, for example 33 days instead of 20, we start to see the difference: 
