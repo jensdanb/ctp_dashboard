@@ -1,6 +1,6 @@
 import pandas as pd
 
-from db_premade_content_for_testing import CcrpBase
+from premade_db_content import CcrpBase
 
 from stock_projection_2D import *
 import pytest

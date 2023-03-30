@@ -1,7 +1,7 @@
 import pytest
 
 from database_model import *  # Import creates database with the test_engine, stored in memory
-from db_premade_content_for_testing import CcrpBase
+from premade_db_content import CcrpBase
 from sqlalchemy.orm import Session
 
 

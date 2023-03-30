@@ -1,5 +1,5 @@
 from database_model import *
-from db_premade_content_for_testing import CcrpBase
+from premade_db_content import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
 
 import pandas as pd
@@ -14,27 +14,12 @@ server_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=
 reset_db(server_engine)
 
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP_route_1']
-plot_color_dict = {
-    'demand': {
-        'color': 'red',
-        'type': 'interval'
-    },
-    'supply': {
-        'color': 'blue',
-        'type': 'interval'
-    },
-    'inventory': {
-        'color': 'yellow',
-        'type': 'area'
-    },
-    'ATP': {
-        'color': 'green',
-        'type': 'area'
-    },
-    'CTP_route_1': {
-            'color': 'pink',
-            'type': 'area'
-        }
+column_plot_styles = {
+    'demand': {'color': 'red', 'type': 'interval'},
+    'supply': {'color': 'blue', 'type': 'interval'},
+    'inventory': {'color': 'teal', 'type': 'area'},
+    'ATP': {'color': 'green', 'type': 'area'},
+    'CTP_route_1': {'color': 'orange', 'type': 'area'}
 }
 
 @app('/ctp', mode='multicast')
@@ -119,13 +104,13 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
 
         plot_marks = []
         for column_name in selected_columns:
-            type = plot_color_dict[column_name]['type']
-            color = plot_color_dict[column_name]['color']
+            type = column_plot_styles[column_name]['type']
+            color = column_plot_styles[column_name]['color']
             plot_marks.append(
                 ui.mark(
                     type=type,
                     x='=date', x_title='Date',
-                    y=f'={column_name}', y_title=f'{column_name}',
+                    y=f'={column_name}', y_title=f'',
                     color=color,
                     dodge='auto',
                     y_min=y_min, y_max=y_max
@@ -134,7 +119,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
 
         q.page['plot'] = ui.plot_card(
             box=plot_box,
-            title='Demand/Supply',
+            title='Quantity',
             data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
             plot=ui.plot(marks=plot_marks)
         )

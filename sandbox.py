@@ -4,7 +4,7 @@ import numpy as np
 import random
 
 from database_model import *
-from db_premade_content_for_testing import CcrpBase
+from premade_db_content import CcrpBase
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
 from forecasting import generate_random_requests
 
