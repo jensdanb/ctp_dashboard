@@ -11,9 +11,6 @@ from h2o_wave import Q, main, app, ui, data, copy_expando
 
 
 current_date = date.today()
-server_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
-dbm.reset_db(server_engine)
-
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP_route_1']
 column_plot_styles = {
     'demand': {'color': 'red', 'type': 'interval'},
@@ -28,28 +25,29 @@ async def serve_ctp(q: Q):
     """ Runs once, on startup """
     if not q.client.initialized:
         q.client.initialized = True
-
-        with dbm.Session(server_engine) as init_session:
+        q.user.db_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
+        dbm.reset_db(q.user.db_engine)
+        with dbm.Session(q.user.db_engine) as init_session:
             dbm.add_from_class(init_session, CcrpBase)
             init_session.commit()
 
         q.client.plot_length = 12
 
     """ Rerun on user action """
-    stockpoint = dbm.run_with_session(server_engine, dbm.get_all, table=dbm.StockPoint)[1]
+    stockpoint = dbm.run_with_session(q.user.db_engine, dbm.get_all, table=dbm.StockPoint)[1]
     copy_expando(q.args, q.client)
 
     if q.args.pre_fill_db:
-        with dbm.Session(server_engine) as fill_session:
+        with dbm.Session(q.user.db_engine) as fill_session:
             dbm.add_from_class_if_db_is_empty(fill_session, CcrpBase)
 
     """ UI response on user action """
     if q.args.matplotlib_plot_button:
-        with dbm.Session(server_engine) as plot_session:
+        with dbm.Session(q.user.db_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint, plot_period=q.client.plot_length)
         await mpl_plot(q, projection.plot)
     elif q.args.native_plot_button:
-        with dbm.Session(server_engine) as plot_session:
+        with dbm.Session(q.user.db_engine) as plot_session:
             projection = ProjectionCTP(plot_session, stockpoint)
         native_plot(q, projection, plot_period=q.client.plot_length)
     else:
