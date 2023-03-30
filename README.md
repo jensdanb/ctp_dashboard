@@ -1,6 +1,6 @@
 # Capable-To-Promise Inventory Model
 
-This is an app for projecting inventory in a supply chain with. At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
+This is an app for projecting inventory in a supply chain. At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
 
 A user interface (work in progress) is made with the H2O Wave framework. Currently the web app looks like this: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228826684-beda9b63-697e-4427-9165-4ea42c024f6c.png)
