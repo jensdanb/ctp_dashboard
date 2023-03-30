@@ -1,6 +1,10 @@
 # Capable-To-Promise Inventory Model
 
-(Work in progress)
+This is an app for projecting inventory in a supply chain with. At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
+
+A user interface (work in progress) is made with the H2O Wave framework. Currently the web app looks like this: 
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228826684-beda9b63-697e-4427-9165-4ea42c024f6c.png)
+
 
 This project was borne out of some frustrations working logistics and responding to purchase orders while restricted by the ERP System's Available-To-Promise (ATP) function. Surely I could do this better! Well... easier said than done. 
 
@@ -8,7 +12,8 @@ Capable-To-Promise (CTP) is an extension of Available-To-Promise (ATP).
 ATP is a automatically calculated by most modern MRP and ERP systems in production logistics. It follows from the projected inventory in a planned period, where the projected inventory on any date is the sum [starting inventory] + [planned incoming] - [planned outgoing] inventory between now and that date. Planned outgoing and planned outgoing are usually in the form of sales orders and production orders. This plan may show an inventory of 100 units  on day 10, but if there is already a sales order for 40 units to customer A on day 11; then the amount that can be promised when customer B makes a purchase request for day 10 is only 60. This is what ATP handles; ATP for each date equals the smallest *future* inventory from that date forward. An MRP system enforcing the rule 'ATP >= 0' will not allow sales personnel to confirm a new order larger than the ATP for that same date, thus preventing 'double-booking'. 
 
 For example, here is projected inventory for a product with four pending sales (demand, in red) and two pending replenishments (supply, in blue): 
-![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228660623-f9d4d5d3-eaf8-4f3a-8114-8cab604719af.png)
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228826910-2772e7b1-a27c-492c-b894-878092e6c453.png)
+
 
 Now let's overlay ATP (the stronger green) to see the difference: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228661071-a866f3b5-8aff-43cb-87ac-087a61908aba.png)
