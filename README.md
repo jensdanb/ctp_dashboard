@@ -11,7 +11,7 @@ This project was borne out of some frustrations working logistics and responding
 ### Capable-To-Promise (CTP) is an extension of ATP. For the uninitiated, an explanation of ATP: 
 ATP is a automatically calculated by most modern MRP and ERP systems in production logistics. It follows from the projected inventory in a planned period, where the projected inventory on any date is the sum [starting inventory] + [planned incoming] - [planned outgoing] inventory between now and that date. Planned demand and planned supply are usually in the form of sales orders and production orders. This plan may project an inventory of 100 units to be in stock on day 10, but if there is already a sales order for 40 units to customer A on day 11, then the amount available for a potential new customer B on day 10 is only 60. ATP for any date equals the smallest *future* projected inventory level from that date forward. An MRP system enforcing the rule 'ATP >= 0' will not allow sales personnel to confirm a new order with a delivery date where the order quantity is larger than ATP for that date, thus preventing 'double-booking'. 
 
-For example, here is projected inventory for a product with four pending sales (demand, in red) and two pending replenishments (supply, in blue) over the next 20 days: 
+For example, here is projected inventory for a product with four pending sales (red bars) and two pending replenishments (blue bars) over the next 20 days: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228826910-2772e7b1-a27c-492c-b894-878092e6c453.png)
 
 
