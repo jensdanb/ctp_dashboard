@@ -11,6 +11,7 @@ from h2o_wave import Q, main, app, ui, data, copy_expando
 
 " deployment push"
 
+
 current_date = date.today()
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP_route_1']
 column_plot_styles = {
