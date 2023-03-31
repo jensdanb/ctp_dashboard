@@ -274,7 +274,7 @@ def get_outgoing_move_orders(session, stockpoint):
     )
     return session.scalars(stmt).all()
 
-
+# mock comment
 def uncompleted_orders(orders):
     return list(filter(lambda order: order.completion_status == 0, orders))
 
