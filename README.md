@@ -1,7 +1,7 @@
 # Capable-To-Promise Inventory Model
 
 ## Update! The app is now live at http://194.195.241.8:10101/ctp
-Still very much unfinished. The app has only a few of the features, and the server will be moved to a proper secured https address. But it works, you can now play with it in your browser; no install required.  
+Still very much unfinished. The web app has only a few of the features, and the server will be moved to a proper secured https address. But it works, you can now play with it in your browser; no install required.  
 
 This is an app for projecting inventory in a supply chain. At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
 

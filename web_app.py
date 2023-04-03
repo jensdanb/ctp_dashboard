@@ -20,10 +20,26 @@ column_plot_styles = {
     'CTP_route_1': {'color': 'orange', 'type': 'area'}
 }
 
+
 @app('/ctp', mode='multicast')
 async def serve_ctp(q: Q):
+    q.page['meta'] = ui.meta_card(box='', layouts=[
+        ui.layout(
+            breakpoint='xs',
+            zones=[
+                ui.zone('header_zone'),
+                ui.zone('control_zone', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('control_zone_left', size='40%'),
+                    ui.zone('control_zone_right', size='60%'),
+                ]),
+                ui.zone('bottom_zone'),
+            ]
+        )
+    ])
+
     """ Runs once, on startup """
     if not q.client.initialized:
+        show_header(q)
         q.client.initialized = True
         q.user.db_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
         dbm.reset_db(q.user.db_engine)
@@ -34,6 +50,26 @@ async def serve_ctp(q: Q):
         q.client.plot_length = 12
 
     """ Rerun on user action """
+
+    q.page['header'] = ui.header_card(box='header_zone', title='My app', subtitle='Routing demonstration', items=[
+        ui.button(name='#page1', label='Page 1', link=True),
+        ui.button(name='#plot_page', label='Plotting', link=True),
+        ui.button(name='#page3', label='Page 3', link=True),
+    ])
+
+    # Remove previous pages.
+    del q.page['page1']
+    del q.page['plot_page']
+    del q.page['page3']
+
+    # Handle menu clicks.
+    if q.args['#'] == 'plot_page':
+        q.page['plot_page'] = ui.markdown_card(box='1 2 6 4', title='Plotting', content='Plotting content')
+    elif q.args['#'] == 'page3':
+        q.page['page3'] = ui.markdown_card(box='1 2 2 2', title='Page 3', content='Page 3 content')
+    else:
+        q.page['page1'] = ui.markdown_card(box='1 2 2 2', title='Page 1', content='Page 1 content')
+
     stockpoint = dbm.run_with_session(q.user.db_engine, dbm.get_all, table=dbm.StockPoint)[1]
     copy_expando(q.args, q.client)
 
@@ -56,14 +92,22 @@ async def serve_ctp(q: Q):
 
     await q.page.save()
 
-db_box = '1 1 2 4'
-plot_control_box = '3 1 3 4'
-plot_box = '1 5 6 4'
+db_box = '1 2 2 4'
+plot_control_box = '3 2 3 4'
+plot_box = '1 6 6 4'
+
+
+def show_header(q: Q):
+    q.page['header'] = ui.header_card(box='header_zone', title='My app', subtitle='Routing demonstration', items=[
+        ui.button(name='#page1', label='Page 1', link=True),
+        ui.button(name='#page2', label='Page 2', link=True),
+        ui.button(name='#page3', label='Page 3', link=True),
+    ])
 
 
 def show_db_controls(q: Q):
     q.page['db_controls'] = ui.form_card(
-        box=db_box,
+        box='control_zone_left',
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='pre_fill_db', label='Prefill database')
@@ -73,7 +117,7 @@ def show_db_controls(q: Q):
 
 def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
-        box=plot_control_box,
+        box='control_zone_right',
         items=[
             ui.text_xl("Plot Controls"),
             ui.button(name='matplotlib_plot_button', label='Matplotlib plot'),
@@ -112,7 +156,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
             )
 
         q.page['plot'] = ui.plot_card(
-            box=plot_box,
+            box='bottom_zone',
             title='Quantity',
             data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
             plot=ui.plot(marks=plot_marks)
@@ -122,7 +166,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
 
 
 async def mpl_plot(q: Q, plot):
-    q.page['plot'] = ui.markdown_card(box=plot_box, title='Projected inventory', content='')
+    q.page['plot'] = ui.markdown_card(box='bottom_zone', title='Projected inventory', content='')
 
     # Make temporary image file from the matplotlib plot
     image_filename = f'{str(uuid.uuid4())}.png'
