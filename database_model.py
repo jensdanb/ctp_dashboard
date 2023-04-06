@@ -175,6 +175,11 @@ def get_by_name(session, table, element_name: str):
     return session.scalars(stmt).one()
 
 
+def get_by_id(session, table, element_id: int):
+    stmt = select(table).where(table.id == element_id)
+    return session.scalars(stmt).one()
+
+
 def get_all(session, table):
     stmt = select(table)
     return session.scalars(stmt).all()
