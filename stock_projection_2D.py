@@ -114,8 +114,14 @@ class ProjectionCTP(StockProjection):
     def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
         super().__init__(session, stockpoint, start_date_offset, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
-        for route in get_incoming_routes(session, stockpoint):
-            self.project_ctp(route)
+        incoming_routes = get_incoming_routes(session, stockpoint)
+        if not incoming_routes:
+            self.df['CTP'] = self.df["ATP"]
+        elif len(incoming_routes) != 1:
+            raise NotImplementedError('Can only project ctp from SINGLE incoming route.')
+        else:
+            for route in get_incoming_routes(session, stockpoint):
+                self.project_ctp(route)
         self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, route: SupplyRoute):
@@ -135,7 +141,7 @@ class ProjectionCTP(StockProjection):
                     break
                 i += 1
 
-            self.df["CTP_route_" + str(route.id)] = self.df["ATP"] + self.df['unused_capacity']
+            self.df["CTP"] = self.df["ATP"] + self.df['unused_capacity']
             self.df.drop(columns=['cum_supply', 'cum_capacity', 'unused_capacity'], inplace=True)
 
     def make_plot(self, duration: int):

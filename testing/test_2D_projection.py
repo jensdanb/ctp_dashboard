@@ -106,25 +106,30 @@ class TestCTP:
         # Arrange setup
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as init_sesssion:
+            sp_1 = get_by_name(init_sesssion, StockPoint, "crp_raw")
+            sp_2 = get_by_name(init_sesssion, StockPoint, "crp_1501")
+            projection1 = ProjectionCTP(init_sesssion, sp_1)
+            projection2 = ProjectionCTP(init_sesssion, sp_2)
 
-            test_sp = get_by_name(init_sesssion, StockPoint, "crp_1501")
-            projection = ProjectionCTP(init_sesssion, test_sp)
+        # Stockpoint with nothing incoming:
+        with Session(test_engine) as ctp_session1:
+            assert projection1.df['CTP'].equals(projection1.df['ATP'])
 
-        with Session(test_engine) as ctp_session:
-            inc_routes = get_incoming_routes(ctp_session, test_sp)
-            out_routes = get_outgoing_routes(ctp_session, test_sp)
+        with Session(test_engine) as ctp_session2:
+            inc_routes = get_incoming_routes(ctp_session2, sp_2)
+            out_routes = get_outgoing_routes(ctp_session2, sp_2)
 
             # Outgoing route is invalid and raises error
             with pytest.raises(NotImplementedError):
-                projection.project_ctp(out_routes[0])
+                projection2.project_ctp(out_routes[0])
 
             # Incoming route works
-            assert 'ATP' in projection.df.keys()
-            assert not projection.df.filter(like='CTP_route', axis=1).empty  # Proves new column for CTP was added
+            assert 'ATP' in projection2.df.keys()
+            assert not projection2.df.filter(like='CTP', axis=1).empty  # Proves new column for CTP was added
 
             # CTP is strictly positive and increasing.
-            for column_name in projection.df.filter(like='CTP_route', axis=1):
-                column = projection.df[column_name]
+            for column_name in projection2.df.filter(like='CTP', axis=1):
+                column = projection2.df[column_name]
                 assert strictly_positive_and_increasing(column)
 
         Base.metadata.drop_all(test_engine)
