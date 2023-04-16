@@ -9,7 +9,6 @@ import os
 import uuid
 from h2o_wave import site, Q, main, app, ui, data, copy_expando
 
-
 current_date = date.today()
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP']
 column_plot_styles = {
@@ -27,9 +26,20 @@ def set_layout(q: Q):
             breakpoint='xs',
             zones=[
                 ui.zone('header_zone'),
+                ui.zone('control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
+                    ui.zone('control_zone_a', size='40%'),
+                    ui.zone('control_zone_b', size='60%'),
+                ]),
+                ui.zone('bottom_zone'),
+            ]
+        ),
+        ui.layout(
+            breakpoint='m',
+            zones=[
+                ui.zone('header_zone'),
                 ui.zone('control_zone', direction=ui.ZoneDirection.ROW, zones=[
-                    ui.zone('control_zone_left', size='40%'),
-                    ui.zone('control_zone_right', size='60%'),
+                    ui.zone('control_zone_a', size='40%'),
+                    ui.zone('control_zone_b', size='60%'),
                 ]),
                 ui.zone('bottom_zone'),
             ]
@@ -39,8 +49,8 @@ def set_layout(q: Q):
 
 @app('/ctp', mode='multicast')
 async def serve_ctp(q: Q):
-    """ Run once, on startup """
 
+    """ Run once, on startup """
     if not q.client.initialized:
         set_layout(q)
         show_header(q)
@@ -61,26 +71,20 @@ async def serve_ctp(q: Q):
         show_plot_stockpoint_chooser(q)
         show_plot_controls(q)
 
-
-
-    """ Rerun on user action """
-
+    """ Data updates on user action """
     copy_expando(q.args, q.client)
 
     if q.args.pre_fill_db:
         with dbm.Session(q.user.db_engine) as fill_session:
             dbm.add_from_class_if_db_is_empty(fill_session, CcrpBase)
 
+    elif q.args.stockpoint_choice_group:
+        with dbm.Session(q.user.db_engine) as sp_select_session:
+            q.client.stockpoint = dbm.get_by_id(sp_select_session, table=dbm.StockPoint, element_id=int(q.client.stockpoint_choice_group))
+
     """ UI response on user action """
-    if q.args.stockpoint_choice_group:
-        q.client.stockpoint = dbm.run_with_session(q.user.db_engine, dbm.get_by_id,
-                                                   table=dbm.StockPoint, element_id=int(q.client.stockpoint_choice_group))
 
-        with dbm.Session(q.user.db_engine) as plot_session:
-            projection = ProjectionCTP(plot_session, q.client.stockpoint)
-        native_plot(q, projection, plot_period=q.client.plot_length)
-
-    elif q.args.matplotlib_plot_button:
+    if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
             projection = ProjectionCTP(plot_session, q.client.stockpoint, plot_period=q.client.plot_length)
         await mpl_plot(q, projection.plot)
@@ -90,6 +94,12 @@ async def serve_ctp(q: Q):
             projection = ProjectionCTP(plot_session, q.client.stockpoint)
         native_plot(q, projection, plot_period=q.client.plot_length)
 
+    elif q.args.show_move_orders:
+        with dbm.Session(q.user.db_engine) as list_move_orders_session:
+            incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
+            outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
+        await show_move_orders(q, incoming_moves, outgoing_moves)
+
     else:
         show_plot_stockpoint_chooser(q)
         show_plot_controls(q)
@@ -98,7 +108,7 @@ async def serve_ctp(q: Q):
 
 
 def show_header(q: Q):
-    q.page['header'] = ui.header_card(box='header_zone', title='My app', subtitle='Routing demonstration', items=[
+    q.page['header'] = ui.header_card(box='header_zone', title='Inventory Projections', subtitle='', items=[
         ui.button(name='#data_page', label='Data', link=True),
         ui.button(name='#plot_page', label='Plotting', link=True),
         ui.button(name='#page3', label='Page 3', link=True),
@@ -108,7 +118,7 @@ def show_header(q: Q):
 # Data page functions
 def show_db_controls(q: Q):
     q.page['data_page'] = ui.form_card(
-        box='control_zone_left',
+        box='control_zone_a',
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='pre_fill_db', label='Prefill database')
@@ -118,16 +128,18 @@ def show_db_controls(q: Q):
 
 # Plotting page functions
 def show_plot_stockpoint_chooser(q: Q):
-    valid_stockpoints = dbm.run_with_session(q.user.db_engine, dbm.get_all, table=dbm.StockPoint)
-    choices = [
-        ui.choice(str(stockpoint.id), stockpoint.name)
-    for stockpoint in valid_stockpoints]
+    with dbm.Session(q.user.db_engine) as session:
+        valid_stockpoints = dbm.get_all(session, table=dbm.StockPoint)
+        choices = [
+            ui.choice(str(stockpoint.id), stockpoint.product.name + ' - ' + stockpoint.name)
+            for stockpoint in valid_stockpoints
+        ]
 
     q.page['stockpoint_chooser'] = ui.form_card(
-        box='control_zone_left',
+        box='control_zone_a',
         items=[
-            ui.text_xl("Choose Stockpoint"),
-            ui.choice_group(name='stockpoint_choice_group', label='Pick one',
+            ui.text_xl("Choose stockpoint"),
+            ui.choice_group(name='stockpoint_choice_group', label='Product - Stockpoint',
                             value=q.args.stockpoint_choice_group, required=True, choices=choices)
         ]
     )
@@ -135,13 +147,17 @@ def show_plot_stockpoint_chooser(q: Q):
 
 def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
-        box='control_zone_right',
+        box='control_zone_b',
         items=[
-            ui.text_xl("Plot Controls"),
-            ui.button(name='matplotlib_plot_button', label='Matplotlib plot'),
-            ui.button(name='native_plot_button', label='Native plot'),
-            ui.slider(name='plot_length', label='Plot Length', min=10, max=50, step=1, value=q.client.plot_length),
-            ui.checklist(name='plot_columns', label='Choose columns to plot', inline=True,
+            ui.text_xl("Make Plot"),
+            ui.buttons([
+                ui.button(name='matplotlib_plot_button', label='Plot with Matplotlib'),
+                ui.button(name='native_plot_button', label='Plot with WebApp Plot'),
+                ui.button(name='show_move_orders', label='Show Move Orders')
+            ]),
+
+            ui.slider(name='plot_length', label='Number of days in plot', min=10, max=50, step=1, value=q.client.plot_length),
+            ui.checklist(name='plot_columns', label='Data columns in plot', inline=True,
                          choices=[ui.choice(name=col_name, label=col_name) for col_name in plotable_columns])
         ]
     )
@@ -180,7 +196,12 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
             plot=ui.plot(marks=plot_marks)
         )
     else:
-        show_plot_controls(q)
+        q.page['plot'] = ui.markdown_card(
+            box='bottom_zone',
+            title='No columns selected',
+            content='No data column selected. Select at least one.'
+        )
+
 
 
 async def mpl_plot(q: Q, plot):
@@ -196,3 +217,32 @@ async def mpl_plot(q: Q, plot):
 
     # Display:
     q.page['plot'].content = f'![plot]({image_path})'
+
+
+async def show_move_orders(q: Q, incoming_moves: list[dbm.MoveOrder], outgoing_moves: list[dbm.MoveOrder]):
+    incoming = [
+        ui.stat_table_item(
+            label=str(order.id),
+            values=['incoming', str(order.quantity), order.order_date.isoformat(),
+                    str(order.completion_status), str(order.request_id)],
+            colors=['blue'] + ['black'] * 4
+        ) for order in incoming_moves
+    ]
+    outgoing = [
+        ui.stat_table_item(
+            label=str(order.id),
+            values=['outgoing', str(order.quantity), order.order_date.isoformat(),
+                    str(order.completion_status), str(order.request_id)],
+            colors=['red'] + ['black'] * 4
+        ) for order in outgoing_moves
+    ]
+
+    all_orders = incoming + outgoing
+
+    q.page['plot'] = ui.stat_table_card(
+        box='bottom_zone',
+        title='Move Orders',
+        columns=['ID', 'incoming/outgoing', 'Quantity', 'Planned Date', 'Completion Status', 'Request ID'],
+        items=all_orders
+
+    )
