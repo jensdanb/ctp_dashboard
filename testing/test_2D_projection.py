@@ -57,7 +57,7 @@ class TestStockProjection:
         # basic init, repeat of test_initialization
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as test_session:
-            test_sp = get_by_name(test_session, StockPoint, "crp_1501")
+            test_sp = get_by_name(test_session, StockPoint, "finished goods")
             projection = ProjectionATP(test_session, test_sp)
 
         # check we are disconnected from database
@@ -106,8 +106,8 @@ class TestCTP:
         # Arrange setup
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as init_sesssion:
-            sp_1 = get_by_name(init_sesssion, StockPoint, "crp_raw")
-            sp_2 = get_by_name(init_sesssion, StockPoint, "crp_1501")
+            sp_1 = get_by_name(init_sesssion, StockPoint, "unfinished goods")
+            sp_2 = get_by_name(init_sesssion, StockPoint, "finished goods")
             projection1 = ProjectionCTP(init_sesssion, sp_1)
             projection2 = ProjectionCTP(init_sesssion, sp_2)
 

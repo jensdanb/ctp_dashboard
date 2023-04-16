@@ -5,13 +5,13 @@ from database_model import *
 class CcrpBase():
     def __init__(self):
         self.product = Product(
-            name="ccrp_ip",
+            name="Product A",
             price=100,
         )
         self.stock_points=[
-               StockPoint(product=self.product, name="crp_raw", current_stock=630),
-               StockPoint(product=self.product, name="crp_1501", current_stock=150),
-               StockPoint(product=self.product, name="crp_shipped", current_stock=0)
+               StockPoint(product=self.product, name="unfinished goods", current_stock=630),
+               StockPoint(product=self.product, name="finished goods", current_stock=150),
+               StockPoint(product=self.product, name="shipped Product A", current_stock=0)
             ]
         self.route1 = SupplyRoute(
             product=self.product,

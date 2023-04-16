@@ -28,15 +28,15 @@ class TestConfig:
                 assert data_content == []
 
             # Can add content
-            product_a = Product(name='product_a', price='50')
-            stockpoint_a = StockPoint(product=product_a, name='stockpoint_a', current_stock=10)
-            test_config_session.add_all([product_a, stockpoint_a])
+            product_b = Product(name='Product B', price='50')
+            stockpoint_b = StockPoint(product=product_b, name='stockpoint_b', current_stock=10)
+            test_config_session.add_all([product_b, stockpoint_b])
             test_config_session.commit()
 
         # DB content persists to new session
         with Session(test_engine) as test_config_session_b:
             stockpoints_in_db = test_config_session_b.scalars(select(StockPoint)).all()
-            assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'product_a'
+            assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'Product B'
 
         # DB content is emptied with reset()
         reset_db(test_engine)
@@ -64,12 +64,12 @@ class TestDBSupportFunctions:
                 table_contents = get_all(test_afc_session_b, table)
                 assert table_contents != []
 
-            premade_product = get_by_name(test_afc_session_b, Product, "ccrp_ip")
+            premade_product = get_by_name(test_afc_session_b, Product, "Product A")
             db_products = get_all(test_afc_session_b, Product)
             assert premade_product in db_products
 
             stockpoint_names_in_db = [stockpoint.name for stockpoint in get_all(test_afc_session_b, StockPoint)]
-            assert stockpoint_names_in_db == ["crp_raw", "crp_1501", "crp_shipped"]
+            assert stockpoint_names_in_db == ["unfinished goods", "finished goods", "shipped Product A"]
 
             routes = get_all(test_afc_session_b, SupplyRoute)
             assert len(routes) == 2
@@ -124,7 +124,7 @@ class TestMoveExecution:
     def test_execute_move(self):
         with Session(test_engine) as test_session_1:
             # Status before execution
-            stockpoint = get_by_name(test_session_1, StockPoint, "crp_1501")
+            stockpoint = get_by_name(test_session_1, StockPoint, "finished goods")
             pre_stock = stockpoint.current_stock
             order = get_outgoing_move_orders(test_session_1, stockpoint)[0]
             print(f'Prestock: {stockpoint.current_stock}')
@@ -147,7 +147,7 @@ class TestMoveExecution:
 
     def test_execute_move_2(self):
         with Session(test_engine) as test_session_2:
-            stockpoint = get_by_name(test_session_2, StockPoint, "crp_1501")
+            stockpoint = get_by_name(test_session_2, StockPoint, "finished goods")
             order_1 = get_outgoing_move_orders(test_session_2, stockpoint)[0]
             order_2 = get_outgoing_move_orders(test_session_2, stockpoint)[1]
 
