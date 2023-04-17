@@ -25,8 +25,8 @@ def layout(q: Q):
             zones=[
                 ui.zone('header_zone'),
                 ui.zone('control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
-                    ui.zone('control_zone_a', size='40%'),
-                    ui.zone('control_zone_b', size='60%'),
+                    ui.zone('control_zone_a', size='42%'),
+                    ui.zone('control_zone_b', size='58%'),
                 ]),
                 ui.zone('plot_zone'),
             ]
@@ -36,8 +36,8 @@ def layout(q: Q):
             zones=[
                 ui.zone('header_zone'),
                 ui.zone('control_zone', direction=ui.ZoneDirection.ROW, zones=[
-                    ui.zone('control_zone_a', size='40%'),
-                    ui.zone('control_zone_b', size='60%'),
+                    ui.zone('control_zone_a', size='33%'),
+                    ui.zone('control_zone_b', size='66%'),
                 ]),
                 ui.zone('plot_zone'),
             ]
