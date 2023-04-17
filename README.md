@@ -6,7 +6,8 @@ Still very much unfinished. The web app has only a few of the features, and the 
 This is an app for projecting inventory in a supply chain and demonstrating the use of Capable-To-Promise compared to Available-To-Promise. For background on those two logistics concepts, see [Concept.md](https://github.com/jensdanb/ctp_dashboard/blob/master/Concept.md). At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
 
 A user interface (work in progress) is made with the H2O Wave framework. As of 03 April 2023 the web app looks like this: 
-![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/228826684-beda9b63-697e-4427-9165-4ea42c024f6c.png)
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/232503928-e8cc57bf-c325-4bb5-8553-36a3407818b8.png)
+
 
 
 This project was borne out of some frustrations working logistics and responding to purchase orders while restricted by the ERP System's Available-To-Promise (ATP) function. Surely I could do this better! Well... easier said than done. 
