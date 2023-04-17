@@ -94,17 +94,15 @@ async def serve_ctp(q: Q):
 
     """ UI response on user action """
     page_hash = q.args['#']
-    if page_hash is not None:
-        del q.page['welcome']
 
     if page_hash == 'plot_page':
         layout_plot_page(q)
-        show_header(q)
         await plot_page(q)
     else:
         layout_home_page(q)
-        show_header(q)
         await home_page(q)
+
+    show_header(q)
     await q.page.save()
 
 
