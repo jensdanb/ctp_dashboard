@@ -63,11 +63,8 @@ async def plot_page(q: Q):
             projection = ProjectionCTP(plot_session, q.client.stockpoint)
         native_plot(q, projection, plot_period=q.client.plot_length)
 
-    elif q.args.show_move_orders:
-        with dbm.Session(q.user.db_engine) as list_move_orders_session:
-            incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
-            outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
-        await show_move_orders(q, incoming_moves, outgoing_moves)
+    elif q.args.show_sp_move_orders:
+        await show_sp_move_orders(q)
 
     else:
         show_plot_stockpoint_chooser(q)
@@ -100,7 +97,7 @@ def show_plot_controls(q: Q):
             ui.buttons([
                 ui.button(name='matplotlib_plot_button', label='Plot with Matplotlib'),
                 ui.button(name='native_plot_button', label='Plot with WebApp Plot'),
-                ui.button(name='show_move_orders', label='Show Move Orders')
+                ui.button(name='show_sp_move_orders', label='Show Incoming/Outgoing Orders')
             ]),
 
             ui.slider(name='plot_length', label='Number of days in plot', min=10, max=50, step=1, value=q.client.plot_length),
@@ -165,8 +162,14 @@ async def mpl_plot(q: Q, plot):
     q.page['plot'].content = f'![plot]({image_path})'
 
 
-async def show_move_orders(q: Q, incoming_moves: list[dbm.MoveOrder], outgoing_moves: list[dbm.MoveOrder]):
-    incoming = [
+async def show_sp_move_orders(q: Q):
+    # Get data from db
+    with dbm.Session(q.user.db_engine) as list_move_orders_session:
+        incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
+        outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
+
+    # Convert to H2O Wave content
+    incoming_table = [
         ui.stat_table_item(
             label=str(order.id),
             values=['incoming', str(order.quantity), order.order_date.isoformat(),
@@ -174,7 +177,7 @@ async def show_move_orders(q: Q, incoming_moves: list[dbm.MoveOrder], outgoing_m
             colors=['blue'] + ['black'] * 4
         ) for order in incoming_moves
     ]
-    outgoing = [
+    outgoing_table = [
         ui.stat_table_item(
             label=str(order.id),
             values=['outgoing', str(order.quantity), order.order_date.isoformat(),
@@ -183,12 +186,12 @@ async def show_move_orders(q: Q, incoming_moves: list[dbm.MoveOrder], outgoing_m
         ) for order in outgoing_moves
     ]
 
-    all_orders = incoming + outgoing
+    full_table = incoming_table + outgoing_table
 
+    # Show H2O Wave content
     q.page['plot'] = ui.stat_table_card(
         box='plot_zone',
         title='Move Orders',
         columns=['ID', 'incoming/outgoing', 'Quantity', 'Planned Date', 'Completion Status', 'Request ID'],
-        items=all_orders
-
+        items=full_table
     )

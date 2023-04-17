@@ -280,6 +280,10 @@ def get_outgoing_move_orders(session, stockpoint):
     return session.scalars(stmt).all()
 
 
+def completed_orders(orders: list[MoveOrder]):
+    return list(filter(lambda order: order.completion_status == 1, orders))
+
+
 def uncompleted_orders(orders: list[MoveOrder]):
     return list(filter(lambda order: order.completion_status == 0, orders))
 
