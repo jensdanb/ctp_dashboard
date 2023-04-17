@@ -99,6 +99,7 @@ async def serve_ctp(q: Q):
 
     if page_hash == 'plot_page':
         layout_plot_page(q)
+        show_header(q)
         await plot_page(q)
     else:
         layout_home_page(q)
