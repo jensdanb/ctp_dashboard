@@ -20,7 +20,19 @@ column_plot_styles = {
 }
 
 
-def set_layout(q: Q):
+def layout_home_page(q: Q):
+    q.page['meta'] = ui.meta_card(box='', layouts=[
+        ui.layout(
+            breakpoint='xs',
+            zones=[
+                ui.zone('header_zone'),
+                ui.zone('message_zone'),
+            ]
+        )
+    ])
+
+
+def layout_plot_page(q: Q):
     q.page['meta'] = ui.meta_card(box='', layouts=[
         ui.layout(
             breakpoint='xs',
@@ -52,8 +64,6 @@ async def serve_ctp(q: Q):
 
     """ Run once, on startup """
     if not q.client.initialized:
-        set_layout(q)
-        show_header(q)
         q.client.initialized = True
 
         q.user.db_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
@@ -68,8 +78,8 @@ async def serve_ctp(q: Q):
         q.client.plot_length = 12
         q.client.plot_columns = plotable_columns
 
-        show_plot_stockpoint_chooser(q)
-        show_plot_controls(q)
+        # show_plot_stockpoint_chooser(q)
+        # show_plot_controls(q)
 
     """ Data updates on user action """
     copy_expando(q.args, q.client)
@@ -83,6 +93,49 @@ async def serve_ctp(q: Q):
             q.client.stockpoint = dbm.get_by_id(sp_select_session, table=dbm.StockPoint, element_id=int(q.client.stockpoint_choice_group))
 
     """ UI response on user action """
+    page_hash = q.args['#']
+    if page_hash is not None:
+        del q.page['welcome']
+
+    if page_hash == 'plot_page':
+        layout_plot_page(q)
+        await plot_page(q)
+    else:
+        layout_home_page(q)
+        show_header(q)
+        await home_page(q)
+    await q.page.save()
+
+
+def show_header(q: Q):
+    q.page['header'] = ui.header_card(box='header_zone', title='Inventory Projections', subtitle='', items=[
+        ui.button(name='#data_page', label='Data', link=True),
+        ui.button(name='#plot_page', label='Plotting', link=True),
+        ui.button(name='#page3', label='Page 3', link=True),
+    ])
+
+
+async def home_page(q:Q):
+    q.page['welcome'] = ui.form_card('message_zone', items=[
+        ui.text_l(f'Welcome to the home page.'),
+        ui.text(f"Please navigate to Data Page or Plotting Page by using the navigation header. ")
+    ])
+
+
+# Data page functions
+def show_db_controls(q: Q):
+    q.page['data_page'] = ui.form_card(
+        box='control_zone_a',
+        items=[
+            ui.text_xl("Database Controls"),
+            ui.button(name='pre_fill_db', label='Prefill database')
+        ]
+    )
+
+
+async def plot_page(q: Q):
+    show_plot_stockpoint_chooser(q)
+    show_plot_controls(q)
 
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
@@ -103,27 +156,6 @@ async def serve_ctp(q: Q):
     else:
         show_plot_stockpoint_chooser(q)
         show_plot_controls(q)
-
-    await q.page.save()
-
-
-def show_header(q: Q):
-    q.page['header'] = ui.header_card(box='header_zone', title='Inventory Projections', subtitle='', items=[
-        ui.button(name='#data_page', label='Data', link=True),
-        ui.button(name='#plot_page', label='Plotting', link=True),
-        ui.button(name='#page3', label='Page 3', link=True),
-    ])
-
-
-# Data page functions
-def show_db_controls(q: Q):
-    q.page['data_page'] = ui.form_card(
-        box='control_zone_a',
-        items=[
-            ui.text_xl("Database Controls"),
-            ui.button(name='pre_fill_db', label='Prefill database')
-        ]
-    )
 
 
 # Plotting page functions
@@ -201,7 +233,6 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
             title='No columns selected',
             content='No data column selected. Select at least one.'
         )
-
 
 
 async def mpl_plot(q: Q, plot):
