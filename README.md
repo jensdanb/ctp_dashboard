@@ -3,7 +3,10 @@
 ## Update! The app is now live at http://194.195.241.8:10101/ctp
 Still very unfinished. The web app has only a few of the features, and the server will be moved to a proper secured https address. But it works, you can now play with it in your browser; no install required.  
 
-This is an app for projecting inventory in a supply chain and demonstrating the use of Capable-To-Promise compared to Available-To-Promise. For background on those two logistics concepts, see [Concept.md](https://github.com/jensdanb/ctp_dashboard/blob/master/Concept.md). At the moment, only 2D projections (quantity vs. time) are implemented. In the future, 3D projections (probability of having a certain quantity at a certain time, based on forecast) may be implemented. It was made for illustrating the logistics concept of Capable-To-Promise as an extension of Available-To-Promise, and for personal practice with Python, data science and web technologies. 
+
+## What can I do with this? 
+
+This is an app for projecting inventory in a supply chain and demonstrating the use of Capable-To-Promise compared to Available-To-Promise. For background on those two logistics concepts, see [Concept.md](https://github.com/jensdanb/ctp_dashboard/blob/master/Concept.md). At the moment, there is only a predefined supply chain with three stockpoints and 6 pending orders. In the near future, it will be possible to add more through the WebApp UI. What you can do is inspect each stockpoint; select one of them in the 'Choose Stockpoint' menu, then use the 'Make Plot' menu to either generate plots of projected inventory in that stockpoint or show a table of the orders planned incoming/outgoing for that stockpoint. 
 
 A user interface (work in progress) is made with the H2O Wave framework. As of 03 April 2023 the web app looks like this: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/232503928-e8cc57bf-c325-4bb5-8553-36a3407818b8.png)
@@ -16,5 +19,4 @@ If the only goal was to demonstrate CTP, I should probably have downloaded an Op
 
 Projections can be made for any stockpoint, generating a Pandas dataframe and a corresponding MatplotLib plot. Work in progress: Forecasting probability of stockout as the probability that new sales requests exceed the current CTP curve. 
 
-# Webapp 
-A user interface is now implemented with the H2O Wave framework. For the moment, it is locked to a premade stockpoint, but it is now possible to generate plots in GUI, with selectable and adjustable parameters. Both MatplotLib (legacy) and H2O plotting engines are supported. 
+
