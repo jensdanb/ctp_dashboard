@@ -166,7 +166,9 @@ async def show_sp_move_orders(q: Q):
     # Get data from db
     with dbm.Session(q.user.db_engine) as list_move_orders_session:
         incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
+        pending_incoming = dbm.uncompleted_orders(incoming_moves)
         outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
+        pending_outgoing = dbm.uncompleted_orders(outgoing_moves)
 
     # Convert to H2O Wave content
     incoming_table = [
@@ -175,7 +177,7 @@ async def show_sp_move_orders(q: Q):
             values=['incoming', str(order.quantity), order.order_date.isoformat(),
                     str(order.completion_status), str(order.request_id)],
             colors=['blue'] + ['black'] * 4
-        ) for order in incoming_moves
+        ) for order in pending_incoming
     ]
     outgoing_table = [
         ui.stat_table_item(
@@ -183,7 +185,7 @@ async def show_sp_move_orders(q: Q):
             values=['outgoing', str(order.quantity), order.order_date.isoformat(),
                     str(order.completion_status), str(order.request_id)],
             colors=['red'] + ['black'] * 4
-        ) for order in outgoing_moves
+        ) for order in pending_outgoing
     ]
 
     full_table = incoming_table + outgoing_table
