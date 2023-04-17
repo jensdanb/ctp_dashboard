@@ -148,7 +148,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
 
 
 async def mpl_plot(q: Q, plot):
-    q.page['plot'] = ui.markdown_card(box='bottom_zone', title='Projected inventory', content='')
+    q.page['plot'] = ui.markdown_card(box='plot_zone', title='Projected inventory', content='')
 
     # Make temporary image file from the matplotlib plot
     image_filename = f'{str(uuid.uuid4())}.png'
