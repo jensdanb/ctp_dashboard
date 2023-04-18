@@ -1,22 +1,18 @@
 from typing import List, Optional
+from datetime import date, timedelta
 
-from sqlalchemy import Column, String, Table, Date
-from sqlalchemy import ForeignKey
-from sqlalchemy import create_engine, select, exc
+from sqlalchemy import Column, String, Table, Date, ForeignKey
 from sqlalchemy import CheckConstraint, UniqueConstraint
-from sqlalchemy import update, inspect
+from sqlalchemy import create_engine, select, exc, update
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import Session
 
-from datetime import date, timedelta
 
-# make database
 Base = declarative_base()
 
 
-# For discrete (countable) goods, such as screws, tires,
 class Product(Base):
     __tablename__ = "product_base"
 
@@ -49,18 +45,11 @@ class StockPoint(Base):
     # Variables
     current_stock: Mapped[int] = mapped_column(CheckConstraint("current_stock >= 0"))
 
-    # outgoing_supply_routes = relationship("SupplyRoute")
-
-    # upstream_stock = Column(
-    # planned_receipts = relationship("MoveOrder", back_populates="receiver")
-    # planned_sends = relationship("MoveOrder", back_populates="source")
-
     def __repr__(self):
         return f"Stock point {self.name}, holding {self.current_stock} of item {self.product.name}."
 
 
-# For one-to-one bom structure
-
+# For one-to-one BOM architecture
 class SupplyRoute(Base):
     __tablename__ = "supply_route"
     __table_args__ = (UniqueConstraint("sender_id", "receiver_id", name="Not_route_to_self"),)
@@ -79,13 +68,13 @@ class SupplyRoute(Base):
 
     move_requests: Mapped[List["MoveRequest"]] = relationship(back_populates="route")
 
-    # Capability
-    capacity: Mapped[int] = mapped_column(CheckConstraint("capacity >= 0"), default=0)
-    lead_time: Mapped[int] = mapped_column(CheckConstraint("lead_time >= 0"), default=2)  # day
+    # Variables
+    capacity: Mapped[int] = mapped_column(CheckConstraint("capacity >= 0"), default=0)  # units per day
+    lead_time: Mapped[int] = mapped_column(CheckConstraint("lead_time >= 0"), default=2)  # days of delay
 
-    def capability(self, day):
+    def capability(self, day):  # Not the same as capacity!
         if not isinstance(day, int) or day < 0:
-            raise ValueError("Days to delivery must be an integer and not negative.")
+            raise ValueError("Days to delivery must be a positive integer or zero.")
         if day < self.lead_time:
             capability = 0
         else:
@@ -107,12 +96,12 @@ class MoveRequest(Base):
     route_id = mapped_column(ForeignKey("supply_route.id"), nullable=False)
     route: Mapped[SupplyRoute] = relationship(back_populates="move_requests")
 
-    # Variables
-    date_of_registration = Column(Date)  # Insert current-start_date_offset
-    requested_delivery_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
-
-    quantity: Mapped[int]
     move_orders: Mapped[List["MoveOrder"]] = relationship(back_populates="request")
+
+    # Variables
+    date_of_registration = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
+    requested_delivery_date = Column(Date)
+    quantity: Mapped[int]
     quantity_delivered: Mapped[int] = mapped_column(default=0)
 
     def __repr__(self):
@@ -132,12 +121,11 @@ class MoveOrder(Base):
 
     # Variables
     quantity: Mapped[int]
-
     order_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
-    completion_status: Mapped[int] = mapped_column(default=0)  # 0: Not completed. 1: Completed.
+    completion_status: Mapped[int] = mapped_column(default=0)  # Not completed: 0. Completed: 1
 
 
-expected_db_orms = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}  # A set.
+expected_orms_in_db = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
 Base.metadata.create_all(test_engine)
@@ -230,10 +218,6 @@ def execute_move(session: Session, move: MoveOrder):
         receiver.current_stock += move.quantity
         move.completion_status = 1
         request.quantity_delivered += move.quantity
-
-
-def add_mock_order_history(session: Session, route: SupplyRoute):
-    pass
 
 
 def execute_scheduled(session, date):

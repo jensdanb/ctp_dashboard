@@ -1,8 +1,8 @@
-import pytest
-
 from database_model import *  # Import creates database with the test_engine, stored in memory
 from premade_db_content import CcrpBase
-from sqlalchemy.orm import Session
+
+from sqlalchemy import inspect
+import pytest
 
 
 # Arrange
@@ -17,13 +17,13 @@ class TestConfig:
     def test_config(self):
         inspector = inspect(test_engine)
 
-        for orm_class in expected_db_orms:
+        for orm_class in expected_orms_in_db:
             assert issubclass(orm_class, Base)
             assert orm_class.__tablename__ in inspector.get_table_names()
 
         with Session(test_engine) as test_config_session:
             # DB starts empty
-            for orm_class in expected_db_orms:
+            for orm_class in expected_orms_in_db:
                 data_content = test_config_session.scalars(select(orm_class)).all()
                 assert data_content == []
 
@@ -52,7 +52,7 @@ class TestDBSupportFunctions:
             add_from_class(test_afc_session_a, CcrpBase)
 
             # Ensure it's been filled
-            for table in expected_db_orms:
+            for table in expected_orms_in_db:
                 table_contents = get_all(test_afc_session_a, table)
                 assert isinstance(table_contents, list) and table_contents != []
 
@@ -60,7 +60,7 @@ class TestDBSupportFunctions:
 
         # Check content in new session
         with Session(test_engine) as test_afc_session_b:
-            for table in expected_db_orms:
+            for table in expected_orms_in_db:
                 table_contents = get_all(test_afc_session_b, table)
                 assert table_contents != []
 
@@ -214,7 +214,7 @@ class TestOther:
         test_session = Session(test_engine)
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
 
-        for db_table in expected_db_orms:
+        for db_table in expected_orms_in_db:
             table_contents = get_all(test_session, db_table)
             assert isinstance(table_contents, list) and table_contents != []
         route = get_all(test_session, SupplyRoute)[0]  # Route nr. [0] is from bulk to finished
@@ -224,7 +224,7 @@ class TestOther:
         for arg in incorrect_arguments:
             with pytest.raises(ValueError) as exc_info:
                 deliverable = route.capability(arg)
-            assert "Days to delivery must be an integer and not negative." in exc_info.__str__()
+            assert "Days to delivery must be a positive integer or zero." in exc_info.__str__()
 
         correct_arguments = [0, 1, 4, 60]
         for arg in correct_arguments:

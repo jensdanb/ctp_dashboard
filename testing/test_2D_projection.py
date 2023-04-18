@@ -39,7 +39,7 @@ class TestStockProjection:
                     projection = StockProjection(invalid_session, all_stockpoints[0])
 
             invalid_db_objects = []
-            for table in expected_db_orms - {StockPoint}:
+            for table in expected_orms_in_db - {StockPoint}:
                 invalid_db_objects += get_all(test_session, table)
 
             for invalid_object in invalid_db_objects:
