@@ -90,11 +90,19 @@ if __name__ == "__main__":
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
         add_from_class_if_db_is_empty(init_session, CcrpBase)
+        order: MoveOrder = get_all(init_session, table=MoveOrder)[0]
+        print(order)
+        print(order.__dict__)
+        for value in {'label': 'id', 'dummy': 42, 'quantity': 'quantity', 'date': 'order_date'}.values():
+            if value in order.__dict__:
+                print(f'Key: {value}, new value: {order.__dict__[value]}')
 
-    check_ctp_plots(sandbox_engine, global_date)
-    print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
+
+
+    # check_ctp_plots(sandbox_engine, global_date)
+    # print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
     fake_order_history()
-    inspect_order_history()
+    # inspect_order_history()
 
 
     reset_db(sandbox_engine)
