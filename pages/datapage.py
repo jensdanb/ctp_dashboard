@@ -1,7 +1,7 @@
 import database_model as dbm
 from premade_db_content import CcrpBase
 
-from h2o_wave import site, Q, ui, data
+from h2o_wave import site, Q, ui, data, StatTableItem
 
 
 """ DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES """
@@ -41,7 +41,7 @@ async def data_page(q: Q):
             dbm.add_from_class_if_db_is_empty(fill_session, CcrpBase)
         show_db_controls(q)
     elif q.args.show_move_orders:
-        await show_move_orders(q)
+        await show_move_orders(q, dbm.MoveOrder)
     else:
         show_db_controls(q)
 
@@ -58,38 +58,64 @@ def show_db_controls(q: Q):
     )
 
 
-async def show_move_orders(q: Q):
-    # Get data from db
+async def show_move_orders(q: Q, db_table: dbm.Base):
+
     with dbm.Session(q.user.db_engine) as list_move_orders_session:
-        all_orders = dbm.get_all(list_move_orders_session, dbm.MoveOrder)
-        pending_orders = dbm.uncompleted_orders(all_orders)
-        completed_orders = dbm.completed_orders(all_orders)
+        all_orders = dbm.get_all(list_move_orders_session, db_table)
 
-    # Convert to H2O Wave content
-    pending_table = [
-        ui.stat_table_item(
-            label=str(order.id),
-            values=['pending', str(order.quantity), order.order_date.isoformat(),
-                    str(order.completion_status), str(order.request_id)],
-            colors=['red'] + ['black'] * 4
-        ) for order in pending_orders
-    ]
-    completed_table = [
-        ui.stat_table_item(
-            label=str(order.id),
-            values=['completed', str(order.quantity), order.order_date.isoformat(),
-                    str(order.completion_status), str(order.request_id)],
-            colors=['red'] + ['black'] * 4
-        ) for order in completed_orders
-    ]
+    conversion_dict  = conversion_dicts[db_table]
+    formatting_dict = formatting_dicts[db_table]
 
-    full_table = pending_table + completed_table
+    title = db_table.__name__
+    columns = list(conversion_dict.keys())
+    items = build_stat_table(all_orders, conversion_dict, 'Move Order nr.')
 
-    # Show H2O Wave content
-    q.page['plot'] = ui.stat_table_card(
-        box='table_zone',
-        title='Move Orders',
-        columns=['ID', 'completed/pending', 'Quantity', 'Planned Date', 'Completion Status', 'Request ID'],
-        items=full_table
-    )
+    format_stat_table(items, formatting_dict)
+
+    q.page['db_table'] = ui.stat_table_card(box='table_zone', title=title, columns=columns, items=items)
+
+
+def build_stat_table(items, conversion_dict, label_arg):
+    conversion_dict = conversion_dict.copy()
+    label_attribute = conversion_dict.pop(label_arg)
+
+    colors = ['black'] * len(conversion_dict)
+    stat_table = []
+    for item in items:
+        label = str(item.__dict__[label_attribute])
+        values = [str(item.__dict__[attribute]) for attribute in conversion_dict.values()]
+
+        stat_table.append(ui.stat_table_item(label=label, values=values, colors=colors))
+
+    return stat_table
+
+
+def format_stat_table(stat_table_items, formating_dict):
+    for target_index in formating_dict.keys():
+        sub_dict = formating_dict[target_index]
+        for item in stat_table_items:
+            value = item.values[target_index]
+            if value in sub_dict:
+                item.values[target_index] = sub_dict[value]['display_value']
+                item.colors[target_index] = sub_dict[value]['color']
+
+
+conversion_dicts = {
+    dbm.MoveOrder: {  # 'Column name': 'attribute name in db'.
+        'Move Order nr.': 'id',
+        'Completed/Pending': 'completion_status',
+        'Quantity': 'quantity',
+        'Planned Date': 'order_date',
+        'Request ID': 'request_id'
+    }
+}
+
+formatting_dicts = {
+    dbm.MoveOrder: {
+         0: {  # target_index 0
+            '0': {'display_value': 'Pending', 'color': 'red'},
+            '1': {'display_value': 'Completed', 'color': 'blue'}
+        }
+    }
+}
 

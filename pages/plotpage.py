@@ -49,9 +49,7 @@ async def plot_page(q: Q):
 
     """ Data updates on user action """
     if q.args.stockpoint_choice_group:
-        with dbm.Session(q.user.db_engine) as sp_select_session:
-            q.client.stockpoint = dbm.get_by_id(sp_select_session, table=dbm.StockPoint, element_id=int(q.client.stockpoint_choice_group))
-
+        update_stockpoint_selection(q)
     """ UI response on user action """
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
@@ -71,6 +69,13 @@ async def plot_page(q: Q):
         show_plot_controls(q)
 
 
+def update_stockpoint_selection(q: Q):
+    with dbm.Session(q.user.db_engine) as sp_select_session:
+        q.client.stockpoint = dbm.get_by_id(session=sp_select_session,
+                                            table=dbm.StockPoint,
+                                            element_id=int(q.client.stockpoint_choice_group))
+
+
 def show_plot_stockpoint_chooser(q: Q):
     with dbm.Session(q.user.db_engine) as session:
         valid_stockpoints = dbm.get_all(session, table=dbm.StockPoint)
@@ -84,7 +89,7 @@ def show_plot_stockpoint_chooser(q: Q):
         items=[
             ui.text_xl("Choose stockpoint"),
             ui.choice_group(name='stockpoint_choice_group', label='Product - Stockpoint',
-                            value=q.args.stockpoint_choice_group, required=True, choices=choices)
+                            value=q.client.stockpoint_choice_group, required=True, choices=choices)
         ]
     )
 

@@ -9,7 +9,7 @@ from datetime import date, timedelta
 from h2o_wave import site, Q, main, app, ui, data, copy_expando
 
 
-@app('/ctp', mode='multicast')
+@app('/', mode='unicast')
 async def serve_ctp(q: Q):
 
     """ Run once, on startup """
@@ -23,7 +23,7 @@ async def serve_ctp(q: Q):
             dbm.add_from_class(init_session, CcrpBase)
             init_session.commit()
 
-            q.client.stockpoint = dbm.get_all(init_session, dbm.StockPoint)[1]
+            q.client.stockpoint = dbm.get_all(init_session, dbm.StockPoint)[0]
             q.args.stockpoint_choice_group = str(q.client.stockpoint.id)
 
         # UI initialization
