@@ -94,9 +94,9 @@ def build_stat_table(items, conversion_dict):
 
 
 def format_stat_table(stat_table_items, item_type):
-    if item_type == dbm.MoveOrder:
+    if item_type is dbm.MoveOrder:
         return [format_table_item_move_order(item) for item in stat_table_items]
-    elif item_type == dbm.MoveRequest:
+    elif item_type is dbm.MoveRequest:
         return [format_table_item_supply_route(item) for item in stat_table_items]
     else:
         print('No formatting function!')
