@@ -1,5 +1,5 @@
 import database_model as dbm
-from premade_db_content import CcrpBase
+from premade_db_content import CcrpBase, ProductB
 
 from h2o_wave import site, Q, ui, data, StatTableItem
 
@@ -37,10 +37,8 @@ def layout(q: Q):
 async def data_page(q: Q):
     if q.args.reset_db:
         with dbm.Session(q.user.db_engine) as fill_session:
-            dbm.reset_db(q.user.db_engine)
-            dbm.add_from_class_if_db_is_empty(fill_session, CcrpBase)
-        show_db_controls(q)
-
+            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, ProductB])
+            fill_session.commit()
     elif q.args.show_supply_routes:
         await show_move_orders(q, dbm.SupplyRoute)
     elif q.args.show_move_requests:

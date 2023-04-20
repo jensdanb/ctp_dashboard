@@ -182,6 +182,11 @@ def add_from_class(session, input_class):
     # if class_instance not in session.scalars(select(Product)).all():
 
 
+def reset_and_fill_db(engine, session, input_classes):
+    reset_db(engine)
+    for input_class in input_classes:
+        add_from_class(session, input_class)
+
 def add_from_class_if_db_is_empty(session, input_class):
     if not session.scalars(select(Product)).all():
         run_in_session(session, add_from_class, input_class=input_class)

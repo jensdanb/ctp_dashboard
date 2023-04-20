@@ -1,5 +1,5 @@
 import database_model as dbm
-from premade_db_content import CcrpBase
+from premade_db_content import CcrpBase, ProductB
 
 from pages import homepage as homepage
 from pages import datapage as datapage
@@ -21,6 +21,7 @@ async def serve_ctp(q: Q):
         dbm.reset_db(q.user.db_engine)
         with dbm.Session(q.user.db_engine) as init_session:
             dbm.add_from_class(init_session, CcrpBase)
+            dbm.add_from_class(init_session, ProductB)
             init_session.commit()
 
             q.client.stockpoint = dbm.get_all(init_session, dbm.StockPoint)[0]
