@@ -73,7 +73,8 @@ class TestDBSupportFunctions:
 
             # Names in db match names in fresh product instance
             stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
-            assert set(stockpoint_names_in_db) == set([stockpoint.name for stockpoint in new_product_instance.stock_points])
+            assert set(stockpoint_names_in_db) == set(
+                [stockpoint.name for stockpoint in new_product_instance.stock_points])
 
             # ... but the actual objects are *not* the same
             assert set(latest_product_in_db.stock_points) != set(new_product_instance.stock_points)
@@ -106,7 +107,8 @@ class TestQueryFilters:
                 assert set(incoming_orders).isdisjoint(set(outgoing_orders))
 
                 early_dates = [date.today(), date.today() + timedelta(days=5), date.today() + timedelta(days=30)]
-                later_dates = [date.today() + timedelta(days=5), date.today() + timedelta(days=15), date.today() + timedelta(days=100)]
+                later_dates = [date.today() + timedelta(days=5), date.today() + timedelta(days=15),
+                               date.today() + timedelta(days=100)]
 
                 for start_date in early_dates:
 
@@ -117,14 +119,17 @@ class TestQueryFilters:
 
                     valid_end_dates = list(filter(lambda d: d >= start_date, later_dates))
                     for end_date in valid_end_dates:
-                        incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=False)
-                        outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=False, outgoing=True)
-                        all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date, incoming=True, outgoing=True)
+                        incoming_these_dates = order_filter(test_session, stockpoint, start_date, end_date,
+                                                            incoming=True, outgoing=False)
+                        outgoing_these_dates = order_filter(test_session, stockpoint, start_date, end_date,
+                                                            incoming=False, outgoing=True)
+                        all_orders_these_dates = order_filter(test_session, stockpoint, start_date, end_date,
+                                                              incoming=True, outgoing=True)
 
                         assert set(incoming_these_dates) <= set(incoming_orders)
                         assert set(outgoing_these_dates) <= set(outgoing_orders)
                         assert set(all_orders_these_dates) <= set(all_orders)
-                        assert set(incoming_these_dates) <= set(all_orders_these_dates) >= set(outgoing_these_dates)
+                        assert set(all_orders_these_dates) == set(incoming_these_dates + outgoing_these_dates)
 
                         # assert consistent result between single-step and two-step filtering
                         assert incoming_these_dates == filter_by_date(incoming_orders, start_date, end_date)
@@ -133,94 +138,117 @@ class TestQueryFilters:
 
 
 class TestMoveExecution:
-    def test_execute_move(self):
+    def test_execute_moves(self):
+
         with Session(test_engine) as test_session_1:
-            # Status before execution
-            product = get_by_name(test_session_1, Product, 'Product A')
-            stockpoint = product.stock_points[1]  # finished goods
-            pre_stock = stockpoint.current_stock
-            order = get_outgoing_move_orders(test_session_1, stockpoint)[0]
-            print(f'Prestock: {stockpoint.current_stock}')
-
-            # Execute
-            execute_move(test_session_1, order)
-            print(f'After_stock in session: {stockpoint.current_stock}')
-
-            # Expected effects
-            assert stockpoint.current_stock == pre_stock - order.quantity
-            assert order.completion_status == 1
-            assert order.request.quantity_delivered == order.quantity
-
-            # Cannot be executed twice
-            with pytest.raises(ValueError) as exc_info:
-                execute_move(test_session_1, order)
-            assert "Order is completed or invalid" in exc_info.__str__()
-
+            products = get_all(test_session_1, Product)
+            for product in products:
+                print(product)
+                self.execute_move_tester(test_session_1, product)
             test_session_1.commit()
 
-    def test_execute_move_2(self):
         with Session(test_engine) as test_session_2:
-            product = get_by_name(test_session_2, Product, 'Product A')
-            stockpoint = product.stock_points[1]  # finished goods
-            order_1 = get_outgoing_move_orders(test_session_2, stockpoint)[0]
-            order_2 = get_outgoing_move_orders(test_session_2, stockpoint)[1]
+            self.execute_move_2(test_session_2)
 
-            # Expected effects
-            assert stockpoint.current_stock == 90  # Was 150 before order_1 in previous session
-            assert order_1.completion_status == 1
+        reset_db(test_engine)
 
+    def execute_move_tester(self, session, product):
+        for stockpoint in product.stock_points:
+
+            # Status before execution
+            starting_stock = stockpoint.current_stock
+            print(f'Starting stock in stockpoint {stockpoint.name}: {stockpoint.current_stock}')
+
+            orders = get_outgoing_move_orders(session, stockpoint)
+
+            for order in orders:
+                stock_before_this_order = stockpoint.current_stock
+                simulated_request_fulfillment = order.request.quantity_delivered
+
+                # Assert that guardrails work
+                if order.quantity > stock_before_this_order:
+                    with pytest.raises(ValueError) as exc_info:
+                        execute_move(session, order)
+                    assert "Cannot move more than the sender has!" in exc_info.__str__()
+                    assert order.completion_status == 0
+                    assert stockpoint.current_stock == stock_before_this_order
+                    assert simulated_request_fulfillment == order.request.quantity_delivered
+
+                elif order.completion_status != 0:
+                    with pytest.raises(ValueError) as exc_info:
+                        execute_move(session, order)
+                    assert "Order is completed or invalid" in exc_info.__str__()
+                    assert order.completion_status == 0
+                    assert stockpoint.current_stock == stock_before_this_order
+                    assert simulated_request_fulfillment == order.request.quantity_delivered
+
+                else:
+                    # Execute
+                    execute_move(session, order)
+                    print(f'After_stock in session: {stockpoint.current_stock}')
+
+                    # Expected effects
+                    assert stockpoint.current_stock == stock_before_this_order - order.quantity
+                    assert order.completion_status == 1
+                    assert order.request.quantity_delivered == simulated_request_fulfillment + order.quantity
+                    simulated_request_fulfillment += order.quantity
+
+                # Cannot be executed twice
+                with pytest.raises(ValueError) as exc_info:
+                    execute_move(session, order)
+                assert "Order is completed or invalid" in exc_info.__str__()
+
+    def execute_move_2(self, session):
+        for order in get_all(session, MoveOrder):
             # Cannot execute order_1 again
             with pytest.raises(ValueError) as exc_info:
-                execute_move(test_session_2, order_1)
+                execute_move(session, order)
             assert "Order is completed or invalid" in exc_info.__str__()
 
-            # Cannot move more than the sender has
-            order_2.quantity += stockpoint.current_stock
-            with pytest.raises(ValueError) as exc_info:
-                execute_move(test_session_2, order_2)
-            assert "Cannot move more than the sender has!" in exc_info.__str__()
 
-            # Assert no changes went through
-            assert order_2.completion_status == 0
-            assert stockpoint.current_stock == 90
+class TestAddItems:
+    def test_add_items(self):
 
-
-class TestNewRequests:
-    def test_add_request(self):
         with Session(test_engine) as add_request_session:
-            outgoing_route = get_all(add_request_session, SupplyRoute)[-1]
+            add_from_class(add_request_session, CcrpBase)
+            last_premade_request_id = get_all(add_request_session, MoveRequest)[-1].id
 
-            id_of_last_premade_request = outgoing_route.move_requests[-1].id
-            assert len(outgoing_route.move_requests) == 4
-            new_request = add_request(outgoing_route, 4, 31)
-            add_request_session.add(new_request)
-            assert len(outgoing_route.move_requests) == 5
-
+            self.add_request_tester(add_request_session)
             add_request_session.commit()
 
         with Session(test_engine) as add_moves_session:
             # Ensure we have the new_request from previous session:
-            last_request = get_all(add_moves_session, MoveRequest)[-1]
-            assert last_request.id == id_of_last_premade_request + 1
-
-            # Add MoveOrder that fulfills half the request
-            partial_order = MoveOrder(request=last_request, order_date=date.today() + timedelta(days=2), quantity=last_request.quantity // 2)
-            add_moves_session.add(partial_order)
-
-            # The MoveOrder that automatically fills the remainder
-            fill_order = fill_request(last_request)
-            add_moves_session.add(fill_order)
-            assert partial_order.quantity + fill_order.quantity == last_request.quantity
-
-            # The MoveOrders are promised but not executed. Execute and check that delivery is complete.
-            assert last_request.quantity_delivered == 0
-            execute_move(add_moves_session, partial_order)
-            execute_move(add_moves_session, fill_order)
-            assert last_request.quantity_delivered == last_request.quantity
+            new_request = get_all(add_moves_session, MoveRequest)[-1]
 
 
-        Base.metadata.drop_all(test_engine)
-        Base.metadata.create_all(test_engine)
+            self.add_moves_tester(add_moves_session, new_request)
+
+        assert new_request.id == last_premade_request_id + 1
+        reset_db(test_engine)
+
+    def add_request_tester(self, session):
+        outgoing_route = get_all(session, SupplyRoute)[-1]
+        assert len(outgoing_route.move_requests) == 4
+        new_request = add_request(outgoing_route, 4, 31)
+        session.add(new_request)
+        assert len(outgoing_route.move_requests) == 5
+
+    def add_moves_tester(self, session, request):
+        # Add MoveOrder that fulfills half the request
+        partial_order = MoveOrder(request=request, order_date=date.today() + timedelta(days=2),
+                                  quantity=request.quantity // 2)
+        session.add(partial_order)
+
+        # The MoveOrder that automatically fills the remainder
+        fill_order = fill_request(request)
+        session.add(fill_order)
+        assert partial_order.quantity + fill_order.quantity == request.quantity
+
+        # The MoveOrders are promised but not executed. Execute and check that delivery is complete.
+        assert request.quantity_delivered == 0
+        execute_move(session, partial_order)
+        execute_move(session, fill_order)
+        assert request.quantity_delivered == request.quantity
 
 
 class TestOther:
@@ -247,4 +275,3 @@ class TestOther:
 
         Base.metadata.drop_all(test_engine)
         Base.metadata.create_all(test_engine)
-
