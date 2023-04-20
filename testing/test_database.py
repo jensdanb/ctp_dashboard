@@ -71,13 +71,20 @@ class TestDBSupportFunctions:
             latest_product_in_db = get_all(test_afc_session_b, Product)[-1]
             new_product_instance = product_class()
 
+            # Names in db match names in fresh product instance
             stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
-            assert set(stockpoint_names_in_db) <= set([stockpoint.name for stockpoint in new_product_instance.stock_points])
+            assert set(stockpoint_names_in_db) == set([stockpoint.name for stockpoint in new_product_instance.stock_points])
+
+            # ... but the actual objects are *not* the same
+            assert set(latest_product_in_db.stock_points) != set(new_product_instance.stock_points)
 
             new_routes = latest_product_in_db.supply_routes
-            assert len(new_routes) == 2
+
+            # Number of new routes and total routes in db is correct
+            assert len(new_routes) == len(new_product_instance.product.supply_routes)
             assert new_routes[-1].id == len(get_all(test_afc_session_b, SupplyRoute))
 
+            # Routing between stockpoints is as follows: route1{sp1 -> sp2}, route2{sp2 -> sp3}
             assert new_routes[0].sender.name == stockpoint_names_in_db[0]
             assert new_routes[0].receiver.name == new_routes[1].sender.name == stockpoint_names_in_db[1]
             assert new_routes[1].receiver.name == stockpoint_names_in_db[2]
