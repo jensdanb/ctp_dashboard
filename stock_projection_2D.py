@@ -27,10 +27,10 @@ class StockProjection:
         self.starting_stock = stockpoint.current_stock
 
         # known events in scope:
-        planned_receipts = order_filter(session, stockpoint, self.start_date, self.final_date, incoming=True,
-                                        outgoing=False)
-        planned_sends = order_filter(session, stockpoint, self.start_date, self.final_date, incoming=False,
-                                     outgoing=True)
+        planned_receipts = uncompleted_orders(order_filter(session, stockpoint, self.start_date, self.final_date, incoming=True,
+                                        outgoing=False))
+        planned_sends = uncompleted_orders(order_filter(session, stockpoint, self.start_date, self.final_date, incoming=False,
+                                     outgoing=True))
         self.included_moves = [order.__dict__ for order in planned_sends + planned_receipts]
 
         # Main projection dataframe

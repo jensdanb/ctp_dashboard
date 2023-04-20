@@ -284,11 +284,11 @@ def filter_by_date(orders, start_date: date, end_date: date):
         return list(filter(lambda order: start_date <= order.order_date <= end_date, orders))
 
 
-def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool):
+def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool, *completed_or_pending):
     orders = []
     if incoming:
         orders += get_incoming_move_orders(session, stockpoint)
     if outgoing:
         orders += get_outgoing_move_orders(session, stockpoint)
     orders = filter_by_date(orders, start_date, end_date)
-    return uncompleted_orders(orders)
+    return orders

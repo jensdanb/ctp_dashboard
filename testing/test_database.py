@@ -143,7 +143,6 @@ class TestMoveExecution:
         with Session(test_engine) as test_session_1:
             products = get_all(test_session_1, Product)
             for product in products:
-                print(product)
                 self.execute_move_tester(test_session_1, product)
             test_session_1.commit()
 
@@ -153,52 +152,47 @@ class TestMoveExecution:
         reset_db(test_engine)
 
     def execute_move_tester(self, session, product):
-        for stockpoint in product.stock_points:
+        for route in product.supply_routes:
+            stockpoint = route.sender
+            requests = route.move_requests
+            for request in requests:
+                simulated_request_fulfillment = request.quantity_delivered
+                for order in request.move_orders:
+                    # Status before execution
+                    stock_before_this_order = stockpoint.current_stock
+                    completion_status_before_execution = order.completion_status
 
-            # Status before execution
-            starting_stock = stockpoint.current_stock
-            print(f'Starting stock in stockpoint {stockpoint.name}: {stockpoint.current_stock}')
+                    # Assert that guardrails work
+                    if order.quantity > stock_before_this_order:
+                        with pytest.raises(ValueError) as exc_info:
+                            execute_move(session, order)
+                        assert "Cannot move more than the sender has!" in exc_info.__str__()
+                        assert order.completion_status == completion_status_before_execution
+                        assert stockpoint.current_stock == stock_before_this_order
+                        assert simulated_request_fulfillment == order.request.quantity_delivered
+                    elif order.completion_status != 0:
+                        with pytest.raises(ValueError) as exc_info:
+                            execute_move(session, order)
+                        assert "Order is completed or invalid" in exc_info.__str__()
+                        assert stockpoint.current_stock == stock_before_this_order
+                        assert simulated_request_fulfillment == order.request.quantity_delivered
 
-            orders = get_outgoing_move_orders(session, stockpoint)
-
-            for order in orders:
-                stock_before_this_order = stockpoint.current_stock
-                simulated_request_fulfillment = order.request.quantity_delivered
-
-                # Assert that guardrails work
-                if order.quantity > stock_before_this_order:
-                    with pytest.raises(ValueError) as exc_info:
+                    else:
                         execute_move(session, order)
-                    assert "Cannot move more than the sender has!" in exc_info.__str__()
-                    assert order.completion_status == 0
-                    assert stockpoint.current_stock == stock_before_this_order
-                    assert simulated_request_fulfillment == order.request.quantity_delivered
 
-                elif order.completion_status != 0:
-                    with pytest.raises(ValueError) as exc_info:
-                        execute_move(session, order)
-                    assert "Order is completed or invalid" in exc_info.__str__()
-                    assert order.completion_status == 0
-                    assert stockpoint.current_stock == stock_before_this_order
-                    assert simulated_request_fulfillment == order.request.quantity_delivered
+                        # Expected effects
+                        assert stockpoint.current_stock == stock_before_this_order - order.quantity
+                        assert order.completion_status == 1 != completion_status_before_execution
+                        assert order.request.quantity_delivered == simulated_request_fulfillment + order.quantity
+                        simulated_request_fulfillment += order.quantity
 
-                else:
-                    # Execute
-                    execute_move(session, order)
-                    print(f'After_stock in session: {stockpoint.current_stock}')
-
-                    # Expected effects
-                    assert stockpoint.current_stock == stock_before_this_order - order.quantity
-                    assert order.completion_status == 1
-                    assert order.request.quantity_delivered == simulated_request_fulfillment + order.quantity
-                    simulated_request_fulfillment += order.quantity
-
-                # Cannot be executed twice
-                with pytest.raises(ValueError) as exc_info:
-                    execute_move(session, order)
-                assert "Order is completed or invalid" in exc_info.__str__()
+                        # Cannot be executed again
+                        with pytest.raises(ValueError) as exc_info:
+                            execute_move(session, order)
+                        assert "Order is completed or invalid" in exc_info.__str__()
 
     def execute_move_2(self, session):
+        print('Started testing execute_move_2')
         for order in get_all(session, MoveOrder):
             # Cannot execute order_1 again
             with pytest.raises(ValueError) as exc_info:
