@@ -1,5 +1,5 @@
 from database_model import *  # Import creates database with the test_engine, stored in memory
-from premade_db_content import CcrpBase
+from premade_db_content import CcrpBase, ProductB
 
 from sqlalchemy import inspect
 import pytest
@@ -28,15 +28,15 @@ class TestConfig:
                 assert data_content == []
 
             # Can add content
-            product_b = Product(name='Product B', price='50')
-            stockpoint_b = StockPoint(product=product_b, name='stockpoint_b', current_stock=10)
+            product_b = Product(name='Product C', price='50')
+            stockpoint_b = StockPoint(product=product_b, name='stockpoint_c', current_stock=10)
             test_config_session.add_all([product_b, stockpoint_b])
             test_config_session.commit()
 
         # DB content persists to new session
         with Session(test_engine) as test_config_session_b:
             stockpoints_in_db = test_config_session_b.scalars(select(StockPoint)).all()
-            assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'Product B'
+            assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'Product C'
 
         # DB content is emptied with reset()
         reset_db(test_engine)
@@ -46,10 +46,14 @@ class TestConfig:
 
 
 class TestDBSupportFunctions:
-    def test_add_from_class(self):
+    def test_add_from_classes(self):
+        for product_class in [CcrpBase, ProductB]:
+            self.add_from_class_tester(product_class)
+
+    def add_from_class_tester(self, product_class: Base):
         with Session(test_engine) as test_afc_session_a:
             # Fill
-            add_from_class(test_afc_session_a, CcrpBase)
+            add_from_class(test_afc_session_a, product_class)
 
             # Ensure it's been filled
             for table in expected_orms_in_db:
@@ -64,18 +68,19 @@ class TestDBSupportFunctions:
                 table_contents = get_all(test_afc_session_b, table)
                 assert table_contents != []
 
-            premade_product = get_by_name(test_afc_session_b, Product, "Product A")
-            db_products = get_all(test_afc_session_b, Product)
-            assert premade_product in db_products
+            latest_product_in_db = get_all(test_afc_session_b, Product)[-1]
+            new_product_instance = product_class()
 
-            stockpoint_names_in_db = [stockpoint.name for stockpoint in get_all(test_afc_session_b, StockPoint)]
-            assert stockpoint_names_in_db == ["unfinished goods", "finished goods", "shipped Product A"]
+            stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
+            assert set(stockpoint_names_in_db) <= set([stockpoint.name for stockpoint in new_product_instance.stock_points])
 
-            routes = get_all(test_afc_session_b, SupplyRoute)
-            assert len(routes) == 2
-            assert routes[0].sender.name == stockpoint_names_in_db[0]
-            assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
-            assert routes[1].receiver.name == stockpoint_names_in_db[2]
+            new_routes = latest_product_in_db.supply_routes
+            assert len(new_routes) == 2
+            assert new_routes[-1].id == len(get_all(test_afc_session_b, SupplyRoute))
+
+            assert new_routes[0].sender.name == stockpoint_names_in_db[0]
+            assert new_routes[0].receiver.name == new_routes[1].sender.name == stockpoint_names_in_db[1]
+            assert new_routes[1].receiver.name == stockpoint_names_in_db[2]
 
 
 class TestQueryFilters:
@@ -124,7 +129,8 @@ class TestMoveExecution:
     def test_execute_move(self):
         with Session(test_engine) as test_session_1:
             # Status before execution
-            stockpoint = get_by_name(test_session_1, StockPoint, "finished goods")
+            product = get_by_name(test_session_1, Product, 'Product A')
+            stockpoint = product.stock_points[1]  # finished goods
             pre_stock = stockpoint.current_stock
             order = get_outgoing_move_orders(test_session_1, stockpoint)[0]
             print(f'Prestock: {stockpoint.current_stock}')
@@ -147,7 +153,8 @@ class TestMoveExecution:
 
     def test_execute_move_2(self):
         with Session(test_engine) as test_session_2:
-            stockpoint = get_by_name(test_session_2, StockPoint, "finished goods")
+            product = get_by_name(test_session_2, Product, 'Product A')
+            stockpoint = product.stock_points[1]  # finished goods
             order_1 = get_outgoing_move_orders(test_session_2, stockpoint)[0]
             order_2 = get_outgoing_move_orders(test_session_2, stockpoint)[1]
 

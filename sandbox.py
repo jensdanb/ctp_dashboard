@@ -6,7 +6,7 @@ import numpy as np
 import random
 
 from database_model import *
-from premade_db_content import CcrpBase
+from premade_db_content import CcrpBase, ProductB
 from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
 from forecasting import generate_random_requests
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
-        add_from_class_if_db_is_empty(init_session, CcrpBase)
+        add_from_class_if_db_is_empty(init_session, ProductB)
         order: MoveOrder = get_all(init_session, table=MoveOrder)[0]
         print(order)
         print(order.__dict__)
@@ -99,10 +99,10 @@ if __name__ == "__main__":
 
 
 
-    # check_ctp_plots(sandbox_engine, global_date)
-    # print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
+    check_ctp_plots(sandbox_engine, global_date)
+    print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
     fake_order_history()
-    # inspect_order_history()
+    inspect_order_history()
 
 
     reset_db(sandbox_engine)
