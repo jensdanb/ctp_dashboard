@@ -124,6 +124,9 @@ class MoveOrder(Base):
     order_date = Column(Date)  # Dates do not yet use the modern Mapped ORM style from sqlA. v.2
     completion_status: Mapped[int] = mapped_column(default=0)  # Not completed: 0. Completed: 1
 
+    def __repr__(self):
+        return f"Move {self.quantity} {self.request.route.product.name} from {self.request.route.sender.name} to " \
+               f"{self.request.route.receiver.name} on {self.order_date}."
 
 expected_orms_in_db = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}
 
@@ -225,8 +228,8 @@ def execute_move(session: Session, move: MoveOrder):
         request.quantity_delivered += move.quantity
 
 
-def execute_scheduled(session, date):
-    scheduled_move_orders = get_scheduled_orders(session, date)
+def execute_scheduled(session, day):
+    scheduled_move_orders = get_scheduled_orders(session, day)
     for order in scheduled_move_orders:
         execute_move(session, order)
 
@@ -284,11 +287,18 @@ def filter_by_date(orders, start_date: date, end_date: date):
         return list(filter(lambda order: start_date <= order.order_date <= end_date, orders))
 
 
-def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool, *completed_or_pending):
+def order_filter(session, stockpoint, start_date, end_date, incoming: bool, outgoing: bool, completed_or_pending=None):
     orders = []
     if incoming:
         orders += get_incoming_move_orders(session, stockpoint)
     if outgoing:
         orders += get_outgoing_move_orders(session, stockpoint)
+
     orders = filter_by_date(orders, start_date, end_date)
-    return orders
+
+    if completed_or_pending == 'completed':
+        return completed_orders(orders)
+    elif completed_or_pending == 'pending':
+        return uncompleted_orders(orders)
+    else:
+        return orders

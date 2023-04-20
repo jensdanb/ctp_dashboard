@@ -24,7 +24,7 @@ class CcrpBase():
                 MoveRequest(quantity=160,
                             date_of_registration=date.today(),
                             requested_delivery_date=date.today() + timedelta(days=4),
-                            move_orders=[MoveOrder(quantity=100, order_date=date.today() + timedelta(days=4)),
+                            move_orders=[MoveOrder(quantity=100, order_date=date.today() + timedelta(days=9)),
                                          MoveOrder(quantity=60, order_date=date.today() + timedelta(days=9))]
                     )
             ],
@@ -69,7 +69,7 @@ class ProductB():
                 MoveRequest(quantity=160, quantity_delivered=100,
                             date_of_registration=date.today(),
                             requested_delivery_date=date.today() + timedelta(days=-4),
-                            move_orders=[MoveOrder(quantity=100, order_date=date.today() + timedelta(days=9), completion_status=1),
+                            move_orders=[MoveOrder(quantity=100, order_date=date.today() + timedelta(days=4), completion_status=1),
                                          MoveOrder(quantity=60, order_date=date.today() + timedelta(days=9))]
                     )
             ],

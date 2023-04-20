@@ -7,16 +7,13 @@ from matplotlib import pyplot as plt
 
 
 class StockProjection:
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
-
-        if not start_date_offset in range(-1, 32):
-            raise TypeError('start_date_offset must be a date between today and 31 days forward')
+    def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
 
         if not plot_period in range(3, 366):
             raise AttributeError('plot_period must be an integer between 3 and 365')
 
         # start and end of projection
-        self.start_date = date.today() + timedelta(days=start_date_offset)
+        self.start_date = date.today()
         self.duration = 365
         self.final_date = self.start_date + timedelta(days=self.duration)
         self.dates_range = pd.date_range(self.start_date, self.final_date)
@@ -27,15 +24,14 @@ class StockProjection:
         self.starting_stock = stockpoint.current_stock
 
         # known events in scope:
-        planned_receipts = uncompleted_orders(order_filter(session, stockpoint, self.start_date, self.final_date, incoming=True,
-                                        outgoing=False))
-        planned_sends = uncompleted_orders(order_filter(session, stockpoint, self.start_date, self.final_date, incoming=False,
-                                     outgoing=True))
+        planned_receipts = order_filter(session, stockpoint, self.start_date, self.final_date,
+                                        incoming=True, outgoing=False, completed_or_pending='pending')
+        planned_sends = order_filter(session, stockpoint, self.start_date, self.final_date,
+                                     incoming=False, outgoing=True, completed_or_pending='pending')
         self.included_moves = [order.__dict__ for order in planned_sends + planned_receipts]
 
         # Main projection dataframe
-        self.df = self.project_inventory(planned_receipts,
-                                         planned_sends)  # columns: "known_demand", "known_supply", "inventory", "ATP"
+        self.df = self.project_inventory(planned_receipts, planned_sends)
 
 
     def __repr__(self):
@@ -74,8 +70,8 @@ def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
 
 
 class ProjectionATP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
-        super().__init__(session, stockpoint, start_date_offset, plot_period)
+    def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
+        super().__init__(session, stockpoint, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
         self.plot = self.make_plot(plot_period)
 
@@ -111,8 +107,8 @@ class ProjectionATP(StockProjection):
 
 
 class ProjectionCTP(StockProjection):
-    def __init__(self, session: Session, stockpoint: StockPoint, start_date_offset=0, plot_period=24):
-        super().__init__(session, stockpoint, start_date_offset, plot_period)
+    def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
+        super().__init__(session, stockpoint, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
         incoming_routes = get_incoming_routes(session, stockpoint)
         if not incoming_routes:

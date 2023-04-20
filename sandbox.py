@@ -31,29 +31,28 @@ def wave_list_experiments(df: pd.DataFrame):
     print(f'df rows: {df.values.tolist()}')
 
 
-def print_and_plot(session, projection_type): # projection_type can be ProjectionATP or ProjectionCTP
-    stockpoint_1501 = get_all(session, table=StockPoint)[1]
-    projection = projection_type(session, stockpoint_1501)
+def print_and_plot(session, stockpoint, projection_type): # projection_type can be ProjectionATP or ProjectionCTP
+    projection = projection_type(session, stockpoint)
     print(projection.df.head(13))
     projection.plot.show()
 
 
-def check_ctp_plots(engine, day):
+def check_ctp_plots(engine, stockpoint_id):
     with Session(engine) as init_session:
-        print_and_plot(init_session, ProjectionATP)
+        stockpoint = get_by_id(init_session, StockPoint, stockpoint_id)
+        print_and_plot(init_session, stockpoint, ProjectionATP)
 
-    # Execute five days
-    for i in range(5):
-        with Session(engine) as action_session:
+    # Execute orders in next five days
+    day = date.today()
+    with Session(engine) as action_session:
+        for i in range(5):
             execute_scheduled(action_session, day)
-            action_session.commit()
-            # Check changes:
-            # stockpoint_1501 = get_all(action_session, table=StockPoint)[1]
-            # print(f'Today is {day}. Stock is: {stockpoint_1501.current_stock}')
-        day += timedelta(days=1)
+            day += timedelta(days=1)
+        action_session.commit()
 
     with Session(engine) as end_session:
-        print_and_plot(end_session, ProjectionCTP)
+        stockpoint = get_by_id(end_session, StockPoint, stockpoint_id)
+        print_and_plot(end_session, stockpoint, ProjectionCTP)
 
 
 def fake_order_history():
@@ -89,17 +88,10 @@ if __name__ == "__main__":
     sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
-        add_from_class_if_db_is_empty(init_session, ProductB)
-        order: MoveOrder = get_all(init_session, table=MoveOrder)[0]
-        print(order)
-        print(order.__dict__)
-        for value in {'label': 'id', 'dummy': 42, 'quantity': 'quantity', 'date': 'order_date'}.values():
-            if value in order.__dict__:
-                print(f'Key: {value}, new value: {order.__dict__[value]}')
+        add_from_class_if_db_is_empty(init_session, CcrpBase)
+        stockpoint = get_all(init_session, StockPoint)[1]
 
-
-
-    check_ctp_plots(sandbox_engine, global_date)
+    check_ctp_plots(sandbox_engine, stockpoint.id)
     print(f'Today is {date.today()} and global_date is {global_date}') # See if global_date was mutated
     fake_order_history()
     inspect_order_history()
