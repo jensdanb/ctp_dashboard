@@ -78,15 +78,17 @@ def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP
 
 def show_plot_stockpoint_chooser(q: Q):
     with dbm.Session(q.user.db_engine) as session:
+
         products = dbm.get_all(session, dbm.Product)
         product_choices = [
             ui.choice(name=str(product.id), label=product.name)
             for product in products
         ]
 
-        valid_stockpoints = dbm.get_all(session, table=dbm.StockPoint)
+        product = dbm.get_by_id(session, dbm.Product, int(q.client.plot_product_selection))
+        valid_stockpoints = product.stock_points
         stockpoint_choices = [
-            ui.choice(str(stockpoint.id), stockpoint.product.name + ' - ' + stockpoint.name)
+            ui.choice(name=str(stockpoint.id), label=stockpoint.name)
             for stockpoint in valid_stockpoints
         ]
 
@@ -94,7 +96,7 @@ def show_plot_stockpoint_chooser(q: Q):
         box='control_zone_a',
         items=[
             ui.dropdown(name='plot_product_selection', label='Select Product',
-                        value=q.client.plot_product_selection, choices=product_choices),
+                        value=q.client.plot_product_selection, choices=product_choices, trigger=True),
             ui.choice_group(name='plot_stockpoint_selection', label='Select Stockpoint',
                             value=q.client.plot_stockpoint_selection, choices=stockpoint_choices)
         ]
@@ -147,7 +149,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
 
         q.page['plot'] = ui.plot_card(
             box='plot_zone',
-            title='Quantity',
+            title=projection.__str__(),
             data=data(fields=plot_frame.columns.tolist(), rows=plot_frame.values.tolist()),
             plot=ui.plot(marks=plot_marks)
         )
