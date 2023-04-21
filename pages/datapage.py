@@ -40,11 +40,14 @@ async def data_page(q: Q):
             dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, ProductB])
             fill_session.commit()
     elif q.args.show_supply_routes:
-        await show_move_orders(q, dbm.SupplyRoute)
+        with dbm.Session(q.user.db_engine) as session:
+            await show_db_contents(q, session, dbm.SupplyRoute)
     elif q.args.show_move_requests:
-        await show_move_orders(q, dbm.MoveRequest)
+        with dbm.Session(q.user.db_engine) as session:
+            await show_db_contents(q, session, dbm.MoveRequest)
     elif q.args.show_move_orders:
-        await show_move_orders(q, dbm.MoveOrder)
+        with dbm.Session(q.user.db_engine) as session:
+            await show_db_contents(q, session, dbm.MoveOrder)
     else:
         show_db_controls(q)
 
@@ -63,14 +66,11 @@ def show_db_controls(q: Q):
     )
 
 
-async def show_move_orders(q: Q, db_table: dbm.Base):
-
-    with dbm.Session(q.user.db_engine) as session:
-        all_items = dbm.get_all(session, db_table)
+async def show_db_contents(q: Q, session, db_table: dbm.Base):
+    title = db_table.__name__
+    all_items = dbm.get_all(session, db_table)
 
     conversion_dict  = conversion_dicts[db_table]
-
-    title = db_table.__name__
     columns = [title] + list(conversion_dict.keys())
     items = build_stat_table(all_items, conversion_dict)
 
