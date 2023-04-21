@@ -46,38 +46,47 @@ def layout(q: Q):
 
 
 async def plot_page(q: Q):
+    if not all([q.client.stockpoint_id_choice_group, q.client.product_dropdown]):
+        q.client.stockpoint_id_choice_group = str(q.client.stockpoint_id)
+        q.client.product_dropdown = '1'
 
     """ Data updates on user action """
     if q.args.stockpoint_choice_group:
-        update_stockpoint_selection(q)
+        q.client.stockpoint_id = int(q.client.stockpoint_id_choice_group)
+    elif q.args.product_dropdown:
+
+        show_stockpoint_selection(q)
+
     """ UI response on user action """
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = ProjectionCTP(plot_session, q.client.stockpoint, plot_period=q.client.plot_length)
+            stockpoint = dbm.get_by_id(plot_session, dbm.StockPoint, q.client.stockpoint_id)
+            projection = ProjectionCTP(plot_session, stockpoint, plot_period=q.client.plot_length)
         await mpl_plot(q, projection.plot)
 
     elif q.args.native_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = ProjectionCTP(plot_session, q.client.stockpoint)
+            stockpoint = dbm.get_by_id(plot_session, dbm.StockPoint, q.client.stockpoint_id)
+            projection = ProjectionCTP(plot_session, stockpoint)
         native_plot(q, projection, plot_period=q.client.plot_length)
 
     elif q.args.show_sp_move_orders:
         await show_sp_move_orders(q)
 
     else:
-        show_plot_stockpoint_chooser(q)
+        show_stockpoint_selection(q)
         show_plot_controls(q)
 
 
-def update_stockpoint_selection(q: Q):
-    with dbm.Session(q.user.db_engine) as sp_select_session:
-        q.client.stockpoint = dbm.get_by_id(session=sp_select_session,
-                                            table=dbm.StockPoint,
-                                            element_id=int(q.client.stockpoint_choice_group))
-
-
-def show_plot_stockpoint_chooser(q: Q):
+def show_stockpoint_selection(q: Q):
     with dbm.Session(q.user.db_engine) as session:
+
+        products = dbm.get_all(session, table=dbm.Product)
+        product_choices = [
+            ui.choice(name=str(product.id), label=product.name)
+            for product in products
+        ]
+
         valid_stockpoints = dbm.get_all(session, table=dbm.StockPoint)
         choices = [
             ui.choice(str(stockpoint.id), stockpoint.product.name + ' - ' + stockpoint.name)
@@ -87,9 +96,9 @@ def show_plot_stockpoint_chooser(q: Q):
     q.page['stockpoint_chooser'] = ui.form_card(
         box='control_zone_a',
         items=[
-            ui.text_xl("Choose stockpoint"),
-            ui.choice_group(name='stockpoint_choice_group', label='Product - Stockpoint',
-                            value=q.client.stockpoint_choice_group, required=True, choices=choices)
+            ui.dropdown('product_dropdown', label='Select Product', choices=product_choices, value=str(q.client.product_id)),
+            ui.choice_group(name='stockpoint_choice_group', label='Select Stockpoint',
+                            value=q.client.stockpoint_id_choice_group, choices=choices)
         ]
     )
 
@@ -170,9 +179,10 @@ async def mpl_plot(q: Q, plot):
 async def show_sp_move_orders(q: Q):
     # Get data from db
     with dbm.Session(q.user.db_engine) as list_move_orders_session:
-        incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
+        stockpoint = dbm.get_by_id(list_move_orders_session, dbm.StockPoint, q.client.stockpoint_id)
+        incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, stockpoint)
         pending_incoming = dbm.uncompleted_orders(incoming_moves)
-        outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
+        outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, stockpoint)
         pending_outgoing = dbm.uncompleted_orders(outgoing_moves)
 
     # Convert to H2O Wave content

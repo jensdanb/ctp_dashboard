@@ -24,10 +24,11 @@ async def serve_ctp(q: Q):
             dbm.add_from_class(init_session, ProductB)
             init_session.commit()
 
-            q.client.stockpoint = dbm.get_all(init_session, dbm.StockPoint)[0]
-            q.args.stockpoint_choice_group = str(q.client.stockpoint.id)
+        # Initial selected data
+        q.client.product_id = 1
+        q.client.stockpoint_id = 1
 
-        # UI initialization
+        # Initial selected UI
         q.client.plot_length = 12
         q.client.plot_columns = plotpage.plotable_columns
 
