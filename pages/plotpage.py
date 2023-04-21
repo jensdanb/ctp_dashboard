@@ -46,19 +46,17 @@ def layout(q: Q):
 
 
 async def plot_page(q: Q):
-
     """ Data updates on user action """
-    if q.args.stockpoint_choice_group:
-        update_stockpoint_selection(q)
+
     """ UI response on user action """
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = ProjectionCTP(plot_session, q.client.stockpoint, plot_period=q.client.plot_length)
+            projection = project_plot_stockpoint_selection(q, plot_session)
         await mpl_plot(q, projection.plot)
 
     elif q.args.native_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = ProjectionCTP(plot_session, q.client.stockpoint)
+            projection = project_plot_stockpoint_selection(q, plot_session)
         native_plot(q, projection, plot_period=q.client.plot_length)
 
     elif q.args.show_sp_move_orders:
@@ -69,11 +67,13 @@ async def plot_page(q: Q):
         show_plot_controls(q)
 
 
-def update_stockpoint_selection(q: Q):
-    with dbm.Session(q.user.db_engine) as sp_select_session:
-        q.client.stockpoint = dbm.get_by_id(session=sp_select_session,
-                                            table=dbm.StockPoint,
-                                            element_id=int(q.client.stockpoint_choice_group))
+def stockpoint_from_selection(q, session):
+    return dbm.get_by_id(session, dbm.StockPoint, int(q.client.plot_stockpoint_selection))
+
+
+def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
+    stockpoint = stockpoint_from_selection(q, session)
+    return projection_class(session, stockpoint)
 
 
 def show_plot_stockpoint_chooser(q: Q):
@@ -88,8 +88,8 @@ def show_plot_stockpoint_chooser(q: Q):
         box='control_zone_a',
         items=[
             ui.text_xl("Choose stockpoint"),
-            ui.choice_group(name='stockpoint_choice_group', label='Product - Stockpoint',
-                            value=q.client.stockpoint_choice_group, required=True, choices=choices)
+            ui.choice_group(name='plot_stockpoint_selection', label='Product - Stockpoint',
+                            value=q.client.plot_stockpoint_selection, required=True, choices=choices)
         ]
     )
 
@@ -170,9 +170,11 @@ async def mpl_plot(q: Q, plot):
 async def show_sp_move_orders(q: Q):
     # Get data from db
     with dbm.Session(q.user.db_engine) as list_move_orders_session:
-        incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, q.client.stockpoint)
+        stockpoint = stockpoint_from_selection(q, list_move_orders_session)
+
+        incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, stockpoint)
+        outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, stockpoint)
         pending_incoming = dbm.uncompleted_orders(incoming_moves)
-        outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, q.client.stockpoint)
         pending_outgoing = dbm.uncompleted_orders(outgoing_moves)
 
     # Convert to H2O Wave content

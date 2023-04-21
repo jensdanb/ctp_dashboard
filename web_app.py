@@ -25,7 +25,7 @@ async def serve_ctp(q: Q):
             init_session.commit()
 
             q.client.stockpoint = dbm.get_all(init_session, dbm.StockPoint)[0]
-            q.args.stockpoint_choice_group = str(q.client.stockpoint.id)
+            q.client.plot_stockpoint_selection = str(q.client.stockpoint.id)
 
         # UI initialization
         q.client.plot_length = 12
