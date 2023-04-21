@@ -1,6 +1,6 @@
 # Capable-To-Promise Inventory Model
 
-## Update! The app is now live at http://194.195.241.8:10101/ctp
+## Update! The app is now live at http://194.195.241.8:10101
 Still very unfinished. The web app has only a few of the features, and the server will be moved to a proper secured https address. But it works, you can now play with it in your browser; no install required.  
 
 
