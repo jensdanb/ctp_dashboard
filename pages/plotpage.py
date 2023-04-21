@@ -78,8 +78,14 @@ def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP
 
 def show_plot_stockpoint_chooser(q: Q):
     with dbm.Session(q.user.db_engine) as session:
+        products = dbm.get_all(session, dbm.Product)
+        product_choices = [
+            ui.choice(name=str(product.id), label=product.name)
+            for product in products
+        ]
+
         valid_stockpoints = dbm.get_all(session, table=dbm.StockPoint)
-        choices = [
+        stockpoint_choices = [
             ui.choice(str(stockpoint.id), stockpoint.product.name + ' - ' + stockpoint.name)
             for stockpoint in valid_stockpoints
         ]
@@ -87,9 +93,10 @@ def show_plot_stockpoint_chooser(q: Q):
     q.page['stockpoint_chooser'] = ui.form_card(
         box='control_zone_a',
         items=[
-            ui.text_xl("Choose stockpoint"),
-            ui.choice_group(name='plot_stockpoint_selection', label='Product - Stockpoint',
-                            value=q.client.plot_stockpoint_selection, required=True, choices=choices)
+            ui.dropdown(name='plot_product_selection', label='Select Product',
+                        value=q.client.plot_product_selection, choices=product_choices),
+            ui.choice_group(name='plot_stockpoint_selection', label='Select Stockpoint',
+                            value=q.client.plot_stockpoint_selection, choices=stockpoint_choices)
         ]
     )
 
