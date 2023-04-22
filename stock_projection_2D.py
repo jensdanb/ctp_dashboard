@@ -102,7 +102,7 @@ class ProjectionATP(StockProjection):
             axis.set_ylabel('Quantity')
             axis.set_xlabel('Day')
 
-        fig.suptitle(self.__repr__(), fontsize=16)
+        fig.suptitle(repr(self), fontsize=16)
         return plt
 
 

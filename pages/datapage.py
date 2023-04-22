@@ -84,7 +84,7 @@ def build_stat_table(items, conversion_dict):
     stat_table = []
     for item in items:
         label = str(item.id)
-        values = [str(item.__dict__[attribute]) for attribute in conversion_dict.values()]
+        values = [str(getattr(item, attribute)) for attribute in conversion_dict.values()]
 
         stat_table.append(ui.stat_table_item(label=label, values=values, colors=colors.copy()))
 
