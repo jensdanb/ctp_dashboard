@@ -19,6 +19,7 @@ class StockProjection:
         self.dates_range = pd.date_range(self.start_date, self.final_date)
 
         # basic stockpoint attributes
+        self.product_name = stockpoint.product.name
         self.stockpoint_id = stockpoint.id
         self.stockpoint_name = stockpoint.name
         self.starting_stock = stockpoint.current_stock
@@ -35,7 +36,7 @@ class StockProjection:
 
 
     def __repr__(self):
-        return f"Stock for stockpoint {self.stockpoint_id} ({self.stockpoint_name}), projected from {self.start_date}."
+        return f"Inventory projection for stockpoint {self.stockpoint_id} ({self.product_name + ' - ' + self.stockpoint_name}), projected from {self.start_date}."
 
     def project_inventory(self, planned_receipts, planned_sends):
         df = pd.DataFrame([[0 for col in range(2)] for row in range(self.duration + 1)], index=self.dates_range,
