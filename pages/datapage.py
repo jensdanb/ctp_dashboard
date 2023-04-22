@@ -1,5 +1,5 @@
 import database_model as dbm
-from premade_db_content import CcrpBase, ProductB
+from premade_db_content import CcrpBase, ProductB, FakeProduct
 
 from h2o_wave import site, Q, ui, data, StatTableItem
 
@@ -37,11 +37,11 @@ def layout(q: Q):
 async def data_page(q: Q):
     if q.args.reset_db:
         with dbm.Session(q.user.db_engine) as fill_session:
-            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, ProductB])
+            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, FakeProduct])
             fill_session.commit()
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
-            await show_db_contents(q, session, dbm.SupplyRoute)
+            await show_db_contents(q, session, getattr(dbm, q.args.show_supply_routes))
     elif q.args.show_move_requests:
         with dbm.Session(q.user.db_engine) as session:
             await show_db_contents(q, session, dbm.MoveRequest)
@@ -59,7 +59,7 @@ def show_db_controls(q: Q):
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='reset_db', label='Reset Database'),
-            ui.button(name='show_supply_routes', label='Show All Supply Routes'),
+            ui.button(name='show_supply_routes', label='Show All Supply Routes', value='SupplyRoute'),
             ui.button(name='show_move_requests', label='Show All Move Requests'),
             ui.button(name='show_move_orders', label='Show All Move Orders')
         ]
