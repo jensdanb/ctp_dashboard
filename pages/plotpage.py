@@ -73,7 +73,7 @@ def stockpoint_from_selection(q, session):
 
 def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
     stockpoint = stockpoint_from_selection(q, session)
-    return projection_class(session, stockpoint)
+    return projection_class(session, stockpoint, plot_period=q.client.plot_length)
 
 
 def show_plot_stockpoint_chooser(q: Q):
