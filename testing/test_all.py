@@ -1,5 +1,5 @@
 import pytest
 from testing.test_database import *
-from testing.test_2D_projection import *
+from testing.test_projections import *
 
 # from testing.test_interface import *
