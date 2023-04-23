@@ -1,8 +1,6 @@
-import pandas as pd
-
 from premade_db_content import CcrpBase
+from projection import *
 
-from stock_projection_2D import *
 import pytest
 from sqlalchemy.orm import exc
 

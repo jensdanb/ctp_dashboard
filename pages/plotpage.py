@@ -1,5 +1,5 @@
 import database_model as dbm
-from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
+from projection import StockProjection, ProjectionATP, ProjectionCTP
 
 import os
 import uuid
