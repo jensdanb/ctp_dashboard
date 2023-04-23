@@ -7,7 +7,7 @@ import random
 
 from database_model import *
 from premade_db_content import CcrpBase, ProductB
-from stock_projection_2D import StockProjection, ProjectionATP, ProjectionCTP
+from projection import StockProjection, ProjectionATP, ProjectionCTP
 from forecasting import generate_random_requests
 
 
