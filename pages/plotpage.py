@@ -1,10 +1,10 @@
-import database_model as dbm
-from projection import StockProjection, ProjectionATP, ProjectionCTP
+from databasing import database_model as dbm
+from projection import StockProjection, ProjectionCTP
 
 import os
 import uuid
 import pandas as pd
-from h2o_wave import site, Q, ui, data
+from h2o_wave import Q, ui, data
 
 
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP']

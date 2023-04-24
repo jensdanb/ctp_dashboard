@@ -1,12 +1,11 @@
-import database_model as dbm
-from premade_db_content import CcrpBase, ProductB
+from databasing import database_model as dbm
+from databasing.premade_db_content import CcrpBase, ProductB
 
 from pages import homepage as homepage
 from pages import datapage as datapage
 from pages import plotpage as plotpage
 
-from datetime import date, timedelta
-from h2o_wave import site, Q, main, app, ui, data, copy_expando
+from h2o_wave import main, Q, app, ui, copy_expando
 
 
 @app('/', mode='unicast')

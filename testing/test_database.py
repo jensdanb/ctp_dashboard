@@ -1,5 +1,5 @@
-from database_model import *  # Import creates database with the test_engine, stored in memory
-from premade_db_content import CcrpBase, ProductB
+from databasing.database_model import *  # Import creates database with the test_engine, stored in memory
+from databasing.premade_db_content import CcrpBase, ProductB
 
 from sqlalchemy import inspect
 import pytest

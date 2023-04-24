@@ -1,4 +1,4 @@
-from database_model import *
+from databasing.database_model import *
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt

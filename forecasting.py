@@ -1,6 +1,6 @@
 # Basic common forecast: "We expect to sell X amount next month, and Y amount next 6 months".
 import random
-from database_model import *
+from databasing.database_model import *
 
 """
     How the random components are made:

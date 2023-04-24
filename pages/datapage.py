@@ -1,8 +1,7 @@
-import database_model as dbm
-from premade_db_content import CcrpBase, ProductB, FakeProduct
+from databasing import database_model as dbm
+from databasing.premade_db_content import CcrpBase, FakeProduct
 
-from h2o_wave import site, Q, ui, data, StatTableItem
-
+from h2o_wave import Q, ui
 
 """ DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES """
 def layout(q: Q):

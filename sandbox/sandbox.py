@@ -1,13 +1,12 @@
 """ Database engine is initializes upon import!!! """
-from pprint import pprint
 
 import pandas as pd
 import numpy as np
 import random
 
-from database_model import *
-from premade_db_content import CcrpBase, ProductB
-from projection import StockProjection, ProjectionATP, ProjectionCTP
+from databasing.database_model import *
+from databasing.premade_db_content import CcrpBase
+from projection import ProjectionATP, ProjectionCTP
 from forecasting import generate_random_requests
 
 

@@ -1,4 +1,4 @@
-from premade_db_content import CcrpBase
+from databasing.premade_db_content import CcrpBase
 from projection import *
 
 import pytest
