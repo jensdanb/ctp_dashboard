@@ -82,8 +82,7 @@ class SupplyRoute(Base):
         return capability
 
     def __repr__(self):
-        return f"Supply route for {self.product.name} from {self.sender.name} to {self.receiver.name}. " \
-               f"Capacity {self.capacity} with Lead Time {self.lead_time}"
+        return f"Supply route from {self.sender.name} to {self.receiver.name}. "
 
 
 class MoveRequest(Base):

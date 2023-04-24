@@ -1,11 +1,11 @@
-from database_model import *
+from databasing.database_model import *
 
 import itertools
 from random import randint, choice, randrange
 from faker import Faker
 from faker.providers import lorem, color
 
-# Add crp and cys to database
+
 class CcrpBase():
     def __init__(self):
         self.product = Product(
@@ -13,9 +13,9 @@ class CcrpBase():
             price=100,
         )
         self.stock_points=[
-               StockPoint(product=self.product, name="unfinished goods", current_stock=630),
-               StockPoint(product=self.product, name="finished goods", current_stock=150),
-               StockPoint(product=self.product, name="shipped Product A", current_stock=0)
+               StockPoint(product=self.product, name="Unfinished goods", current_stock=630),
+               StockPoint(product=self.product, name="Finished goods", current_stock=150),
+               StockPoint(product=self.product, name="Shipped Product A", current_stock=0)
             ]
         self.route1 = SupplyRoute(
             product=self.product,
@@ -58,9 +58,9 @@ class ProductB():
             price=200,
         )
         self.stock_points=[
-               StockPoint(product=self.product, name="unfinished goods", current_stock=630),
-               StockPoint(product=self.product, name="finished goods", current_stock=150),
-               StockPoint(product=self.product, name="shipped Product B", current_stock=0)
+               StockPoint(product=self.product, name="Unfinished goods", current_stock=630),
+               StockPoint(product=self.product, name="Finished goods", current_stock=150),
+               StockPoint(product=self.product, name="Shipped Product B", current_stock=0)
             ]
         self.route1 = SupplyRoute(
             product=self.product,
