@@ -1,5 +1,6 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import CcrpBase, FakeProduct
+import databasing.relationship_graphing as rg
 
 from h2o_wave import Q, ui
 
@@ -10,11 +11,8 @@ def layout(q: Q):
             breakpoint='xs',
             zones=[
                 ui.zone('header_zone'),
-                ui.zone('data_bottom_zone'),
-                ui.zone('control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
-                    ui.zone('control_zone_1', size='40%'),
-                    ui.zone('control_zone_2', size='60%'),
-                ]),
+                ui.zone('control_zone'),
+                ui.zone('graph_zone'),
                 ui.zone('table_zone'),
             ]
         ),
@@ -22,11 +20,8 @@ def layout(q: Q):
             breakpoint='m',
             zones=[
                 ui.zone('header_zone'),
-                ui.zone('data_bottom_zone'),
-                ui.zone('control_zone', direction=ui.ZoneDirection.ROW, zones=[
-                    ui.zone('control_zone_1', size='40%'),
-                    ui.zone('control_zone_2', size='60%'),
-                ]),
+                ui.zone('control_zone'),
+                ui.zone('graph_zone'),
                 ui.zone('table_zone'),
             ]
         )
@@ -49,18 +44,38 @@ async def data_page(q: Q):
             await show_db_contents(q, session, dbm.MoveOrder)
     else:
         show_db_controls(q)
+        with dbm.Session(q.user.db_engine) as session:
+            await show_graph(q, session)
 
 
-# Data page functions
 def show_db_controls(q: Q):
     q.page['db_controls'] = ui.form_card(
-        box='data_bottom_zone',
+        box='control_zone',
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='reset_db', label='Reset Database'),
             ui.button(name='show_supply_routes', label='Show All Supply Routes', value='SupplyRoute'),
             ui.button(name='show_move_requests', label='Show All Move Requests'),
             ui.button(name='show_move_orders', label='Show All Move Orders')
+        ]
+    )
+
+
+async def show_graph(q: Q, session):
+
+    last_product: dbm.Product = dbm.get_all(session, dbm.Product)[-1]
+    sc_graph = rg.graph_supply_chain(session, last_product)
+    net = rg.visualize_graph(sc_graph)
+    html_content = rg.net_to_html_str(net)
+
+    height_size = str(50 + 100*len(sc_graph.nodes)) + 'px'
+    width_size = '350px'
+
+    q.page['graph'] = ui.form_card(
+        box='graph_zone',
+        title='Supply Chain Overview: ',
+        items=[
+            ui.frame(content=html_content, height=height_size, width=width_size)
         ]
     )
 
