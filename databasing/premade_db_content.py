@@ -107,7 +107,7 @@ class FakeProduct():
             price=randint(20, 200),
         )
         self.stock_points = [
-            StockPoint(product=self.product, name="Stockpoint" + str(s+1), current_stock=choice([0, randrange(100, 1000, 50)]))
+            StockPoint(product=self.product, name="Stockpoint " + str(s+1), current_stock=choice([0, randrange(100, 1000, 50)]))
             for s in range(randint(3, 5))
         ]
         self.supply_routes = []
