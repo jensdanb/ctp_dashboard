@@ -3,6 +3,7 @@ import databasing.database_model as dbm
 
 from pyvis.network import Network
 import networkx as nx
+from os import remove
 
 
 def graph_supply_chain(session, product: dbm.Product):
@@ -14,10 +15,32 @@ def graph_supply_chain(session, product: dbm.Product):
     edge_list = [(route.sender_id, route.receiver_id, {'label': f'Route {route.id}'}) for route in product.supply_routes]
     graph.add_edges_from(edge_list)
 
-    # Visual placement
-
-
     return graph
+
+
+def visualize_graph(graph: nx.DiGraph):
+    pixel_height = str(50 + 100 * len(graph.nodes))
+
+    net = Network(f'{pixel_height}px', f'350px')
+
+    net.from_nx(graph)
+
+    return net
+
+
+def net_to_html_str(net: Network):
+    filename = 'net.html'
+    net.save_graph(filename)
+
+    text = """"""
+    for line in open(filename):
+        text += line
+    remove(filename)
+    return text
+
+
+def save_net_as_html(net: Network, filename):
+    net.save_graph(filename)
 
 
 if __name__ == "__main__":
@@ -25,14 +48,16 @@ if __name__ == "__main__":
     with dbm.Session(graph_test_engine) as init_session:
         dbm.reset_db(graph_test_engine)
         dbm.add_from_class(init_session, ProductB)
+        dbm.add_from_class(init_session, FakeProduct)
         init_session.commit()
 
 
 
     with dbm.Session(graph_test_engine) as netting_session:
-        product_b: dbm.Product = dbm.get_by_id(netting_session, dbm.Product, 1)
-        graph_b = graph_supply_chain(netting_session, product_b)
+        fake_product: dbm.Product = dbm.get_by_id(netting_session, dbm.Product, 2)
+        graph_b = graph_supply_chain(netting_session, fake_product)
 
-    net_b = Network('500px', '500px')
-    net_b.from_nx(graph_b)
-    net_b.show('nx.html')
+    net_b = visualize_graph(graph_b)
+
+    print(net_to_html_str(net_b))
+
