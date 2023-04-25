@@ -18,24 +18,21 @@ def graph_supply_chain(session, product: dbm.Product):
     return graph
 
 
-def visualize_graph(graph: nx.DiGraph):
+def graph_to_net(graph: nx.DiGraph):
     pixel_height = str(50 + 100 * len(graph.nodes))
-
     net = Network(f'{pixel_height}px', f'350px')
-
     net.from_nx(graph)
-
     return net
 
 
 def net_to_html_str(net: Network):
     filename = 'net.html'
-    net.save_graph(filename)
+    net.write_html(filename)
 
     text = """"""
     for line in open(filename):
         text += line
-    remove(filename)
+    # remove(filename)
     return text
 
 
@@ -57,7 +54,8 @@ if __name__ == "__main__":
         fake_product: dbm.Product = dbm.get_by_id(netting_session, dbm.Product, 2)
         graph_b = graph_supply_chain(netting_session, fake_product)
 
-    net_b = visualize_graph(graph_b)
+    net_b = graph_to_net(graph_b)
+    content = net_to_html_str(net_b)
 
-    print(net_to_html_str(net_b))
+    print(content)
 

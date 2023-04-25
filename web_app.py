@@ -24,8 +24,8 @@ async def serve_ctp(q: Q):
             init_session.commit()
 
         # UI initialization
-        q.client.plot_product_selection = '1'
-        q.client.plot_stockpoint_selection = '1'  # Warning! Do not set to id number that could be outside initially selected product!
+        q.client.product_selection = '1'
+        q.client.stockpoint_selection = '1'  # Warning! Do not set to id number that could be outside initially selected product!
         q.client.plot_length = 12
         q.client.plot_columns = plotpage.plotable_columns
 

@@ -1,17 +1,21 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import CcrpBase, FakeProduct
-import databasing.relationship_graphing as rel_graph
+import databasing.relationship_graphing as graphing
+from pages.shared_content import show_plot_stockpoint_chooser, get_selected, product_dropdown
 
 from h2o_wave import Q, ui
 
-""" DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES """
+
 def layout(q: Q):
     q.page['meta'] = ui.meta_card(box='', layouts=[
         ui.layout(
             breakpoint='xs',
             zones=[
-                ui.zone('header_zone'),
-                ui.zone('control_zone'),
+                ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
+                ui.zone('db_control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
+                    ui.zone('db_control_zone_a', size='50%'),
+                    ui.zone('db_control_zone_b', size='50%'),
+                ]),
                 ui.zone('graph_zone'),
                 ui.zone('table_zone'),
             ]
@@ -20,7 +24,10 @@ def layout(q: Q):
             breakpoint='m',
             zones=[
                 ui.zone('header_zone'),
-                ui.zone('control_zone'),
+                ui.zone('db_control_zone', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('db_control_zone_a', size='50%'),
+                    ui.zone('db_control_zone_b', size='50%'),
+                ]),
                 ui.zone('graph_zone'),
                 ui.zone('table_zone'),
             ]
@@ -29,10 +36,11 @@ def layout(q: Q):
 
 
 async def data_page(q: Q):
+
     if q.args.reset_db:
-        with dbm.Session(q.user.db_engine) as fill_session:
-            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, FakeProduct])
-            fill_session.commit()
+        with dbm.Session(q.user.db_engine) as session:
+            dbm.reset_and_fill_db(q.user.db_engine, session, [CcrpBase, FakeProduct])
+            session.commit()
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
             await show_db_contents(q, session, getattr(dbm, q.args.show_supply_routes))
@@ -42,42 +50,54 @@ async def data_page(q: Q):
     elif q.args.show_move_orders:
         with dbm.Session(q.user.db_engine) as session:
             await show_db_contents(q, session, dbm.MoveOrder)
+    elif q.args.show_graph:
+        with dbm.Session(q.user.db_engine) as session:
+            update_graph(q, session)
     else:
         show_db_controls(q)
         with dbm.Session(q.user.db_engine) as session:
-            await show_graph(q, session)
+            show_sc_overview(q, session)
 
 
 def show_db_controls(q: Q):
     q.page['db_controls'] = ui.form_card(
-        box='control_zone',
+        box='db_control_zone_a',
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='reset_db', label='Reset Database'),
-            ui.button(name='show_supply_routes', label='Show All Supply Routes', value='SupplyRoute'),
             ui.button(name='show_move_requests', label='Show All Move Requests'),
             ui.button(name='show_move_orders', label='Show All Move Orders')
         ]
     )
 
 
-async def show_graph(q: Q, session):
+def show_sc_overview(q: Q, session):
+    product_selector = product_dropdown(q, session)
+    q.page['sc_overview'] = ui.form_card(
+        box='db_control_zone_b',
+        items=[
+            ui.text_xl("Supply Chain Overview"),
+            product_selector,
+            ui.button(name='show_supply_routes', label='Show All Supply Routes', value='SupplyRoute'),
+            ui.button(name='show_graph', label='Show Graph'),
+        ]
+    )
 
-    last_product: dbm.Product = dbm.get_all(session, dbm.Product)[-1]
-    sc_graph = rel_graph.graph_supply_chain(session, last_product)
-    net = rel_graph.visualize_graph(sc_graph)
-    html_content = rel_graph.net_to_html_str(net)
 
-    height_size = str(50 + 100*len(sc_graph.nodes)) + 'px'
-    width_size = '350px'
+def update_graph(q: Q, session):
+    selected_product: dbm.Product = get_selected(q, session, dbm.Product)
+    sc_graph = graphing.graph_supply_chain(session, selected_product)
+    net = graphing.graph_to_net(sc_graph)
+    html_content = graphing.net_to_html_str(net)
 
     q.page['graph'] = ui.form_card(
         box='graph_zone',
-        title='Supply Chain Overview: ',
         items=[
-            ui.frame(content=html_content, height=height_size, width=width_size)
+            ui.text_xl(selected_product.name + ' Supply Chain'),
+            ui.frame(content=html_content, height='500px', width='350px')
         ]
     )
+
 
 
 async def show_db_contents(q: Q, session, db_table: dbm.Base):
