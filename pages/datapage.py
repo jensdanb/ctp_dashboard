@@ -1,6 +1,6 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import CcrpBase, FakeProduct
-import databasing.relationship_graphing as rg
+import databasing.relationship_graphing as rel_graph
 
 from h2o_wave import Q, ui
 
@@ -64,9 +64,9 @@ def show_db_controls(q: Q):
 async def show_graph(q: Q, session):
 
     last_product: dbm.Product = dbm.get_all(session, dbm.Product)[-1]
-    sc_graph = rg.graph_supply_chain(session, last_product)
-    net = rg.visualize_graph(sc_graph)
-    html_content = rg.net_to_html_str(net)
+    sc_graph = rel_graph.graph_supply_chain(session, last_product)
+    net = rel_graph.visualize_graph(sc_graph)
+    html_content = rel_graph.net_to_html_str(net)
 
     height_size = str(50 + 100*len(sc_graph.nodes)) + 'px'
     width_size = '350px'
