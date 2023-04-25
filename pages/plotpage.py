@@ -1,6 +1,6 @@
 from databasing import database_model as dbm
 from projection import StockProjection, ProjectionCTP
-from pages.shared_content import show_plot_stockpoint_chooser, get_selected
+from pages.shared_content import get_selected, product_dropdown, stockpoint_choice_group
 
 import os
 import uuid
@@ -70,6 +70,20 @@ async def plot_page(q: Q):
 def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
     stockpoint = get_selected(q, session, dbm.StockPoint)
     return projection_class(session, stockpoint, plot_period=q.client.plot_length)
+
+
+def show_plot_stockpoint_chooser(q: Q, box, trigger1=False, trigger2=False):
+    with dbm.Session(q.user.db_engine) as session:
+        product_chooser = product_dropdown(q, session, trigger=trigger1)
+        stockpoint_chooser = stockpoint_choice_group(q, session, trigger=trigger2)
+
+    q.page['stockpoint_chooser'] = ui.form_card(
+        box=box,
+        items=[
+            product_chooser,
+            stockpoint_chooser
+        ]
+    )
 
 
 def show_plot_controls(q: Q):

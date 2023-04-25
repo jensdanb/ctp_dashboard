@@ -1,7 +1,7 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import CcrpBase, FakeProduct
 import databasing.relationship_graphing as graphing
-from pages.shared_content import show_plot_stockpoint_chooser, get_selected, product_dropdown
+from pages.shared_content import get_selected, product_dropdown
 
 from h2o_wave import Q, ui
 
@@ -36,11 +36,10 @@ def layout(q: Q):
 
 
 async def data_page(q: Q):
-
     if q.args.reset_db:
-        with dbm.Session(q.user.db_engine) as session:
-            dbm.reset_and_fill_db(q.user.db_engine, session, [CcrpBase, FakeProduct])
-            session.commit()
+        with dbm.Session(q.user.db_engine) as fill_session:
+            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, FakeProduct])
+            fill_session.commit()
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
             await show_db_contents(q, session, getattr(dbm, q.args.show_supply_routes))
@@ -54,32 +53,32 @@ async def data_page(q: Q):
         with dbm.Session(q.user.db_engine) as session:
             update_graph(q, session)
     else:
+        show_sc_overview(q)
         show_db_controls(q)
-        with dbm.Session(q.user.db_engine) as session:
-            show_sc_overview(q, session)
 
 
-def show_db_controls(q: Q):
-    q.page['db_controls'] = ui.form_card(
+def show_sc_overview(q: Q):
+    with dbm.Session(q.user.db_engine) as session:
+        product_selector = product_dropdown(q, session, trigger=True)
+    q.page['sc_overview'] = ui.form_card(
         box='db_control_zone_a',
         items=[
-            ui.text_xl("Database Controls"),
-            ui.button(name='reset_db', label='Reset Database'),
-            ui.button(name='show_move_requests', label='Show All Move Requests'),
-            ui.button(name='show_move_orders', label='Show All Move Orders')
+            ui.text_xl("Supply Chain Overview"),
+            product_selector,
+            ui.button(name='show_supply_routes', label='Table: Supply Routes', value='SupplyRoute'),
+            ui.button(name='show_graph', label='Graph: Supply Routes'),
         ]
     )
 
 
-def show_sc_overview(q: Q, session):
-    product_selector = product_dropdown(q, session)
-    q.page['sc_overview'] = ui.form_card(
+def show_db_controls(q: Q):
+    q.page['db_controls'] = ui.form_card(
         box='db_control_zone_b',
         items=[
-            ui.text_xl("Supply Chain Overview"),
-            product_selector,
-            ui.button(name='show_supply_routes', label='Show All Supply Routes', value='SupplyRoute'),
-            ui.button(name='show_graph', label='Show Graph'),
+            ui.text_xl("Database Controls"),
+            ui.button(name='reset_db', label='Reset Database'),
+            ui.button(name='show_move_requests', label='Table: Move Requests'),
+            ui.button(name='show_move_orders', label='Table: Move Orders')
         ]
     )
 

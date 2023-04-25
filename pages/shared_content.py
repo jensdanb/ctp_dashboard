@@ -45,18 +45,3 @@ def stockpoint_choice_group(q: Q, session, trigger=False):
                             value=q.client.stockpoint_selection,
                            choices=stockpoint_choices,
                            trigger=trigger)
-
-
-def show_plot_stockpoint_chooser(q: Q, box, trigger1=False, trigger2=False):
-    with dbm.Session(q.user.db_engine) as session:
-
-        product_chooser = product_dropdown(q, session, trigger=trigger1)
-        stockpoint_chooser = stockpoint_choice_group(q, session, trigger=trigger2)
-
-    q.page['stockpoint_chooser'] = ui.form_card(
-        box=box,
-        items=[
-            product_chooser,
-            stockpoint_chooser
-        ]
-    )
