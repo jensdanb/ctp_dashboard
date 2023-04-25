@@ -20,7 +20,7 @@ A user interface is made with the H2O Wave framework.
 Use the navigation header in the top right corner to move between pages. The Home page is empty for now. 
 On the Database page, you can show the supply chain for a product in both table and graph form. The latter is auto-generated with networkx and pyvis into html, and passed as raw html to a UI card in the WebApp. You can also show other database content, and reset+generate a fresh database with the Refill button. In the future, adding, editing and removing database content will be supported here. 
 
-Database page status on 25 April 2023: 
+Database page UI status on 25 April 2023: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/234341586-769695ed-3f06-4ad5-a5ff-fd0cd92c9114.png)
 
 
