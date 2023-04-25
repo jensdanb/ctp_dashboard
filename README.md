@@ -31,8 +31,11 @@ Plotting page UI status on 03 April 2023:
 
 ## Planned features
 1: Ability to edit database content in the WebApp UI
+
 2: Testing that branching supply chains (stockpoints with more than one outgoing and one incoming SupplyRoute) work
+
 3: Moving the public server to a better secured server with https and appropriate domain name
+
 4: User log-in with persistent database between user sessions. 
 
 
