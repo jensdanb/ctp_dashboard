@@ -16,8 +16,8 @@ def layout(q: Q):
                     ui.zone('db_control_zone_a', size='50%'),
                     ui.zone('db_control_zone_b', size='50%'),
                 ]),
-                ui.zone('graph_zone'),
                 ui.zone('table_zone'),
+                ui.zone('graph_zone'),
             ]
         ),
         ui.layout(
@@ -28,8 +28,8 @@ def layout(q: Q):
                     ui.zone('db_control_zone_a', size='50%'),
                     ui.zone('db_control_zone_b', size='50%'),
                 ]),
-                ui.zone('graph_zone'),
                 ui.zone('table_zone'),
+                ui.zone('graph_zone'),
             ]
         )
     ])
@@ -40,6 +40,7 @@ async def data_page(q: Q):
         with dbm.Session(q.user.db_engine) as fill_session:
             dbm.reset_and_fill_db(q.user.db_engine, fill_session, [CcrpBase, FakeProduct])
             fill_session.commit()
+        show_sc_overview(q)
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
             await show_db_contents(q, session, getattr(dbm, q.args.show_supply_routes))
@@ -92,7 +93,7 @@ def update_graph(q: Q, session):
     q.page['graph'] = ui.form_card(
         box='graph_zone',
         items=[
-            ui.text_xl(selected_product.name + ' Supply Chain'),
+            ui.text_xl('Graph: Supply Chain for product ' + selected_product.name),
             ui.frame(content=html_content, height='500px', width='350px')
         ]
     )
