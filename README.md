@@ -32,9 +32,12 @@ Plotting page UI status on 03 April 2023:
 ## Planned features
 1: Ability to edit database content in the WebApp UI
 
+
 2: Testing that branching supply chains (stockpoints with more than one outgoing and one incoming SupplyRoute) work
 
+
 3: Moving the public server to a better secured server with https and appropriate domain name
+
 
 4: User log-in with persistent database between user sessions. 
 
@@ -44,8 +47,16 @@ Plotting page UI status on 03 April 2023:
 If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online. None of them are very hard, and the guide will explain them better than I could do here. Some familiarity with the command line is assumed, and it may be slightly different on Windows. 
 
 1: Install Python3 on your computer
+
+
 2: Use git to clone the project from this url address to a folder on your machine
+
+
 3: Create and activate a Python Virtual Environment inside the folder you got from git
+
+
 4: Use python pip to install dependencies by exuting (while still inside the Virtual Environment) the following command: pip install -r requirements.txt
+
+
 5: Run the app with wave by executing the following command: wave run web_app
 
