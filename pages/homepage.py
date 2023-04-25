@@ -1,13 +1,12 @@
 from h2o_wave import site, Q, ui
 
 
-""" DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES """
 def layout(q: Q):
     q.page['meta'] = ui.meta_card(box='', layouts=[
         ui.layout(
             breakpoint='xs',
             zones=[
-                ui.zone('header_zone'),
+                ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
                 ui.zone('message_zone'),
             ]
         )
