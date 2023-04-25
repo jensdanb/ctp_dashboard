@@ -1,5 +1,6 @@
 from databasing import database_model as dbm
 from projection import StockProjection, ProjectionCTP
+from pages.shared_content import show_plot_stockpoint_chooser, get_selected
 
 import os
 import uuid
@@ -17,13 +18,12 @@ column_plot_styles = {
 }
 
 
-""" DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES """
 def layout(q: Q):
     q.page['meta'] = ui.meta_card(box='', layouts=[
         ui.layout(
             breakpoint='xs',
             zones=[
-                ui.zone('header_zone'),
+                ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
                 ui.zone('control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
                     ui.zone('control_zone_a', size='42%'),
                     ui.zone('control_zone_b', size='58%'),
@@ -63,44 +63,13 @@ async def plot_page(q: Q):
         await show_sp_move_orders(q)
 
     else:
-        show_plot_stockpoint_chooser(q)
+        show_plot_stockpoint_chooser(q, 'control_zone_a', trigger1=True)
         show_plot_controls(q)
 
 
-def stockpoint_from_selection(q, session):
-    return dbm.get_by_id(session, dbm.StockPoint, int(q.client.plot_stockpoint_selection))
-
-
 def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
-    stockpoint = stockpoint_from_selection(q, session)
+    stockpoint = get_selected(q, session, dbm.StockPoint)
     return projection_class(session, stockpoint, plot_period=q.client.plot_length)
-
-
-def show_plot_stockpoint_chooser(q: Q):
-    with dbm.Session(q.user.db_engine) as session:
-
-        products = dbm.get_all(session, dbm.Product)
-        product_choices = [
-            ui.choice(name=str(product.id), label=product.name)
-            for product in products
-        ]
-
-        product = dbm.get_by_id(session, dbm.Product, int(q.client.plot_product_selection))
-        valid_stockpoints = product.stock_points
-        stockpoint_choices = [
-            ui.choice(name=str(stockpoint.id), label=stockpoint.name)
-            for stockpoint in valid_stockpoints
-        ]
-
-    q.page['stockpoint_chooser'] = ui.form_card(
-        box='control_zone_a',
-        items=[
-            ui.dropdown(name='plot_product_selection', label='Select Product',
-                        value=q.client.plot_product_selection, choices=product_choices, trigger=True),
-            ui.choice_group(name='plot_stockpoint_selection', label='Select Stockpoint',
-                            value=q.client.plot_stockpoint_selection, choices=stockpoint_choices)
-        ]
-    )
 
 
 def show_plot_controls(q: Q):
@@ -179,7 +148,7 @@ async def mpl_plot(q: Q, plot):
 async def show_sp_move_orders(q: Q):
     # Get data from db
     with dbm.Session(q.user.db_engine) as list_move_orders_session:
-        stockpoint = stockpoint_from_selection(q, list_move_orders_session)
+        stockpoint = get_selected(q, list_move_orders_session, dbm.StockPoint)
 
         incoming_moves = dbm.get_incoming_move_orders(list_move_orders_session, stockpoint)
         outgoing_moves = dbm.get_outgoing_move_orders(list_move_orders_session, stockpoint)
