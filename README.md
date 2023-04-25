@@ -1,7 +1,7 @@
 # Capable-To-Promise Inventory Model
 
 ## Update! The app is now public at http://194.195.241.8:10101
-The app is still incomplete and the server is not well secured, but you can now try it out without installing. If you prefer to run it locally on your machine instead of visiting the url above, follow the instructions at the bottom of this page. 
+The app is still incomplete and the server is not well secured, but you can now try it out without installing. If you want to install and run it locally on your machine, instructions are at the bottom of this page. 
 
 
 ## What is this? 
@@ -44,7 +44,7 @@ Plotting page UI status on 03 April 2023:
 
 ## Instructions for running this on your own machine
 
-If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online. None of them are very hard, and the guide will explain them better than I could do here. Some familiarity with the command line is assumed, and it may be slightly different on Windows. 
+If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online: None of them are very hard, and the guide will explain them better than I could do here. These instructions are for Linux machines. Details of each step is slightly different for MacOS and more different for Windows, but the general procedure should be roughly the same. 
 
 1: Install Python3 on your computer
 
