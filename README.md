@@ -1,22 +1,39 @@
 # Capable-To-Promise Inventory Model
 
-## Update! The app is now live at http://194.195.241.8:10101
-Still very unfinished. The web app has only a few of the features, and the server will be moved to a proper secured https address. But it works, you can now play with it in your browser; no install required.  
+## Update! The app is now public at http://194.195.241.8:10101
+The app is still incomplete and the server is not well secured, but you can now try it out without installing. If you prefer to run it locally on your machine instead of visiting the url above, follow the instructions at the bottom of this page. 
 
 
-## What can I do with this? 
+## What is this? 
 
-This is an app for projecting inventory in a supply chain and demonstrating the use of Capable-To-Promise compared to Available-To-Promise. For background on those two logistics concepts, see [Concept.md](https://github.com/jensdanb/ctp_dashboard/blob/master/Concept.md). At the moment, there is only a predefined supply chain with three stockpoints and 6 pending orders. In the near future, it will be possible to add more through the WebApp UI. What you can do is inspect each stockpoint; select one of them in the 'Choose Stockpoint' menu, then use the 'Make Plot' menu to either generate plots of projected inventory in that stockpoint or show a table of the orders planned incoming/outgoing for that stockpoint. 
+This is an app for managing inventory in a supply chain and demonstrating the Capable-To-Promise (CTP) logistics concept. Explainer on CTP is found here: [Concept.md](https://github.com/jensdanb/ctp_dashboard/blob/master/Concept.md). 
 
-A user interface (work in progress) is made with the H2O Wave framework. As of 03 April 2023 the web app looks like this: 
+
+When you open the app in your browser, a database containing two Products is generated for you, and each product has a number of Stockpoints (inventory locations) connected by SupplyRoutes, representing the supply chain. An example (Product A) has the stockpoints Unfinished Goods -> Finished Goods -> Customer Inventory connected by two SupplyRoutes. To move goods along a SupplyRoute, a MoveRequest for a certain quantity is first created, then confirmed with one or more MoveOrders to fulfill the requested quantity. Inventory is transferred when the MoveOrder is executed, and at the same time the completion status of the MoveRequest is updated. 
+
+A user interface is made with the H2O Wave framework. As of 03 April 2023 the web app looks like this: 
 ![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/232503928-e8cc57bf-c325-4bb5-8553-36a3407818b8.png)
 
+Use the navigation header in the top right corner to move between pages. The Home page is empty for now. 
+On the Database page, you can show the supply chain for a product in both table and graph form. The latter is auto-generated with networkx and pyvis into html, and passed as raw html to a UI card in the WebApp. You can also show other database content, and reset+generate a fresh database with the Refill button. In the future, adding, editing and removing database content will be supported here. 
+
+The Plotting page is for showing the projected inventory over time in any selected Stockpoint. The Python Pandas library is used to generate tables with inventory availability resulting from the pending incoming/outgoing (supply/demand) MoveOrders for that stockpoint. In addition to projected inventory, ATP and CTP is also displayed, representing what amount of inventory is available to respond to new MoveRequests under an ATP or CTP policy. 
 
 
-This project was borne out of some frustrations working logistics and responding to purchase orders while restricted by the ERP System's Available-To-Promise (ATP) function. Surely I could do this better! Well... easier said than done. 
+## Planned features
+1: Ability to edit database content in the WebApp UI
+2: Testing that branching supply chains (stockpoints with more than one outgoing and one incoming SupplyRoute) work
+3: Moving the public server to a better secured server with https and appropriate domain name
+4: User log-in with persistent database between user sessions. 
 
-If the only goal was to demonstrate CTP, I should probably have downloaded an Open Source ERP system, such as Odoo, but I also have a goal of learning SQL and improving my Python skills, so decided to build from scratch. An SQL database is made to model a 1-1 supply chain for a product. A product can have multiple stockpoints, representing the different stages between raw material and delivered end product, for example "raw material","finished goods" and "customer's inventory". Routes are defined between stockpoints, and transfers are handled in two steps: A MoveRequest, and then one or more MoveOrders that fulfill the request. 'Move' is used instead of 'Sales' because the system handles internal and external transfers the same way, and instead of 'Transaction' or 'Transfer' to make clear that it handles physical movement, not payments etc. 
 
-Projections can be made for any stockpoint, generating a Pandas dataframe and a corresponding MatplotLib plot. Work in progress: Forecasting probability of stockout as the probability that new sales requests exceed the current CTP curve. 
+## Instructions for running this on your own machine
 
+If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online. None of them are very hard, and the guide will explain them better than I could do here. Some familiarity with the command line is assumed, and it may be slightly different on Windows. 
+
+1: Install Python3 on your computer
+2: Use git to clone the project from this url address to a folder on your machine
+3: Create and activate a Python Virtual Environment inside the folder you got from git
+4: Use python pip to install dependencies by exuting (while still inside the Virtual Environment) the following command: pip install -r requirements.txt
+5: Run the app with wave by executing the following command: wave run web_app
 
