@@ -1,7 +1,7 @@
 # Capable-To-Promise Inventory Model
 
-## Update! The app is now public at http://194.195.241.8:10101
-The app is still incomplete and the server is not well secured, but it doesn't contain important data and you can now try it out without installing. If you want to install and run it locally on your machine, instructions are at the bottom of this page. 
+## Update! The app is now live at http://194.195.241.8:10101
+It is incomplete and the server is barebones, but you can now try it out without installing anything. If you want to install and run it locally on your machine, instructions are at the bottom of this page. 
 
 
 ## What is this? 
