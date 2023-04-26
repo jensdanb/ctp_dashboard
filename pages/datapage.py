@@ -52,7 +52,7 @@ async def data_page(q: Q):
             await show_db_contents(q, session, dbm.MoveOrder)
     elif q.args.show_graph:
         with dbm.Session(q.user.db_engine) as session:
-            update_graph(q, session)
+            show_graph(q, session)
     else:
         show_sc_overview(q)
         show_db_controls(q)
@@ -84,11 +84,9 @@ def show_db_controls(q: Q):
     )
 
 
-def update_graph(q: Q, session):
+def show_graph(q: Q, session):
     selected_product: dbm.Product = get_selected(q, session, dbm.Product)
-    sc_graph = graphing.graph_supply_chain(session, selected_product)
-    net = graphing.graph_to_net(sc_graph)
-    html_content = graphing.net_to_html_str(net)
+    html_content = graphing.product_to_html_str(session, selected_product)
 
     q.page['graph'] = ui.form_card(
         box='graph_zone',

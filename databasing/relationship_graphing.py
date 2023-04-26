@@ -36,6 +36,13 @@ def net_to_html_str(net: Network):
     return text
 
 
+def product_to_html_str(session, product):
+    sc_graph = graph_supply_chain(session, product)
+    net = graph_to_net(sc_graph)
+    html_string = net_to_html_str(net)
+    return html_string
+
+
 def save_net_as_html(net: Network, filename):
     net.save_graph(filename)
 
