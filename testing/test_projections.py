@@ -17,14 +17,12 @@ def universal_projection_assertions(session, projection):
     # Consistency with database:
     assert projection.stockpoint_id == stockpoint_in_db.id
     assert projection.start
-
-
     assert projection.start_date < projection.final_date
     assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
 
+
 class TestStockProjection:
     # Setup inputs
-
     def test_initialization(self):
         run_with_session(test_engine, add_from_class, input_class=CcrpBase)
         with Session(test_engine) as test_session:
