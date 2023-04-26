@@ -6,7 +6,7 @@ import networkx as nx
 from os import remove
 
 
-def graph_supply_chain(session, product: dbm.Product):
+def product_graph(session, product: dbm.Product):
     graph = nx.DiGraph()
 
     node_list = [(stockpoint.id, {'label': f'Stockpoint {stockpoint.id}', 'y': 100 * stockpoint.id}) for stockpoint in product.stock_points]
@@ -20,7 +20,7 @@ def graph_supply_chain(session, product: dbm.Product):
 
 def graph_to_net(graph: nx.DiGraph):
     pixel_height = str(50 + 100 * len(graph.nodes))
-    net = Network(f'{pixel_height}px', f'350px')
+    net = Network(height=f'{pixel_height}px', width='350px', directed=True)
     net.from_nx(graph)
     return net
 
@@ -28,16 +28,15 @@ def graph_to_net(graph: nx.DiGraph):
 def net_to_html_str(net: Network):
     filename = 'net.html'
     net.write_html(filename)
-
     text = """"""
     for line in open(filename):
         text += line
-    # remove(filename)
+    remove(filename)
     return text
 
 
 def product_to_html_str(session, product):
-    sc_graph = graph_supply_chain(session, product)
+    sc_graph = product_graph(session, product)
     net = graph_to_net(sc_graph)
     html_string = net_to_html_str(net)
     return html_string
@@ -59,7 +58,7 @@ if __name__ == "__main__":
 
     with dbm.Session(graph_test_engine) as netting_session:
         fake_product: dbm.Product = dbm.get_by_id(netting_session, dbm.Product, 2)
-        graph_b = graph_supply_chain(netting_session, fake_product)
+        graph_b = product_graph(netting_session, fake_product)
 
     net_b = graph_to_net(graph_b)
     content = net_to_html_str(net_b)
