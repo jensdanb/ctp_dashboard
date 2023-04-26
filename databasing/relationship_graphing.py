@@ -18,6 +18,10 @@ def product_graph(session, product: dbm.Product):
     return graph
 
 
+""" WARNING: Tests for these two functions are by default commented out from test_all, to avoid browser spam """
+""" When changing these, make sure to reactivate and run the tests in test_all """
+
+
 def graph_to_net(graph: nx.DiGraph):
     pixel_height = str(50 + 100 * len(graph.nodes))
     net = Network(height=f'{pixel_height}px', width='350px', directed=True)
@@ -40,6 +44,9 @@ def product_to_html_str(session, product):
     net = graph_to_net(sc_graph)
     html_string = net_to_html_str(net)
     return html_string
+
+
+""" WARNING: Tests for these three functions are commented out by default, to avoid html spam when running test_all"""
 
 
 def save_net_as_html(net: Network, filename):
