@@ -113,31 +113,29 @@ class ProjectionCTP(StockProjection):
 
         if not incoming_routes:
             self.df['CTP'] = self.df["ATP"]
-        elif len(incoming_routes) != 1:
-            raise NotImplementedError('Can only project ctp from SINGLE incoming route.')
         else:
             self.project_ctp(incoming_routes)
         self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, routes: list[SupplyRoute]):
-        if not all([self.stockpoint_name == route.receiver.name for route in routes]) :
+        if not all([route.receiver.name == self.stockpoint_name for route in routes]) :
             raise NotImplementedError('Can only project ctp from incoming route.')
         else:
             self.df['cum_supply'] = np.cumsum(self.df['supply'])
             self.df['cum_capacity'] = potential_capacity(routes, self.df.index)
-            self.df['unused_capacity'] = self.df[['cum_supply', 'cum_capacity']].max(axis=1) - self.df['cum_supply']
 
+            self.df['unused_capacity'] = self.df[['cum_supply', 'cum_capacity']].max(axis=1) - self.df['cum_supply']
             # Purge premature "unused capacity" which is in fact committed to a later delivery.
             i = 0
             for unused_capacity in self.df['unused_capacity'][::-1]:
                 if unused_capacity <= 0:
-                    self.df['unused_capacity'].iloc[:self.duration + 1 - i] = 0
+                    self.df['unused_capacity'].iloc[:self.duration - i] = 0
                     break
                 i += 1
 
-            self.df["CTP"] = self.df["ATP"] + self.df['unused_capacity']
-            self.df["CTP"] = self.df[['ATP', 'CTP']].max(axis=1)
-            self.df.drop(columns=['cum_supply', 'cum_capacity', 'unused_capacity'], inplace=True)
+            self.df["potential_inventory"] = self.df['inventory'] + self.df['unused_capacity']
+            self.df["CTP"] = minimum_future(self.df["potential_inventory"])
+            self.df.drop(columns=['cum_supply', 'cum_capacity', 'unused_capacity', 'potential_inventory'], inplace=True)
 
     def make_plot(self, duration: int):
 

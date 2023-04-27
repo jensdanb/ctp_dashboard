@@ -111,7 +111,16 @@ class TestCTP:
                 ctp_column = projection.df['CTP']
                 assert not ctp_column.empty
 
-                # CTP is strictly increasing.
+                # CTP is bigger than ATP and strictly increasing.
+                bigger_than_ATP = ctp_column >= projection.df['ATP']
+                assert bigger_than_ATP.all()
+
+                if not strictly_increasing(ctp_column):
+                    print('Inventory:')
+                    # print(projection.df['supply'].to_string())
+                    print(np.cumsum(projection.df['supply']).to_string())
+                    print('CTP:')
+                    print(ctp_column.to_string())
                 assert strictly_increasing(ctp_column)
 
         reset_db(test_engine)
