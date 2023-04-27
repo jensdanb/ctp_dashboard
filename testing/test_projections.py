@@ -16,7 +16,7 @@ def universal_projection_assertions(session, projection):
     stockpoint_in_db = get_by_name(session, StockPoint, projection.stockpoint_name)
     # Consistency with database:
     assert projection.stockpoint_id == stockpoint_in_db.id
-    assert projection.start
+    assert isinstance(projection.start_date, date)
     assert projection.start_date < projection.final_date
     assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
 
@@ -65,10 +65,8 @@ class TestStockProjection:
         with Session(test_engine) as test_session:
             all_stockpoints = get_all(test_session, StockPoint)
             for stockpoint in all_stockpoints:
-
                 projection = StockProjection(test_session, stockpoint)
-                assert projection.start_date < projection.final_date
-                assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
+                universal_projection_assertions(test_session, projection)
 
         reset_db(test_engine)
 
