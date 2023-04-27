@@ -1,5 +1,5 @@
 from databasing import database_model as dbm
-from databasing.premade_db_content import ProductA, ProductB
+from databasing.premade_db_content import ProductA, FakeProduct
 
 from pages import homepage as homepage
 from pages import datapage as datapage
@@ -20,7 +20,7 @@ async def serve_ctp(q: Q):
         dbm.reset_db(q.user.db_engine)
         with dbm.Session(q.user.db_engine) as init_session:
             dbm.add_from_class(init_session, ProductA)
-            dbm.add_from_class(init_session, ProductB)
+            dbm.add_from_class(init_session, FakeProduct)
             init_session.commit()
 
         # UI initialization
