@@ -166,14 +166,14 @@ class TestMoveExecution:
                     if order.quantity > stock_before_this_order:
                         with pytest.raises(ValueError) as exc_info:
                             execute_move(session, order)
-                        assert "Cannot move more than the sender has!" in exc_info.__str__()
+                        assert "Cannot move more than the sender has!" in exc_info.value.args[0]
                         assert order.completion_status == completion_status_before_execution
                         assert stockpoint.current_stock == stock_before_this_order
                         assert simulated_request_fulfillment == order.request.quantity_delivered
                     elif order.completion_status != 0:
                         with pytest.raises(ValueError) as exc_info:
                             execute_move(session, order)
-                        assert "Order is completed or invalid" in exc_info.__str__()
+                        assert "Order is completed or invalid" in exc_info.value.args[0]
                         assert stockpoint.current_stock == stock_before_this_order
                         assert simulated_request_fulfillment == order.request.quantity_delivered
 
@@ -189,7 +189,7 @@ class TestMoveExecution:
                         # Cannot be executed again
                         with pytest.raises(ValueError) as exc_info:
                             execute_move(session, order)
-                        assert "Order is completed or invalid" in exc_info.__str__()
+                        assert "Order is completed or invalid" in exc_info.value.args[0]
 
     def execute_move_2(self, session):
         print('Started testing execute_move_2')
@@ -197,7 +197,7 @@ class TestMoveExecution:
             # Cannot execute order_1 again
             with pytest.raises(ValueError) as exc_info:
                 execute_move(session, order)
-            assert "Order is completed or invalid" in exc_info.__str__()
+            assert "Order is completed or invalid" in exc_info.value.args[0]
 
 
 class TestAddItems:
@@ -260,7 +260,7 @@ class TestOther:
         for arg in incorrect_arguments:
             with pytest.raises(ValueError) as exc_info:
                 deliverable = route.capability(arg)
-            assert "Days to delivery must be a positive integer or zero." in exc_info.__str__()
+            assert "Days to delivery must be a positive integer or zero." in exc_info.value.args[0]
 
         correct_arguments = [0, 1, 4, 60]
         for arg in correct_arguments:
