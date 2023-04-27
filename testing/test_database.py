@@ -1,5 +1,5 @@
-from databasing.database_model import *  # Import creates database with the test_engine, stored in memory
-from databasing.premade_db_content import ProductA, FakeProduct
+from databasing.database_model import *
+from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 
 from sqlalchemy import inspect
 import pytest
@@ -46,7 +46,7 @@ class TestConfig:
 
 class TestDBSupportFunctions:
     def test_add_from_classes(self):
-        for product_class in [ProductA, FakeProduct]:
+        for product_class in [ProductA, FakeProduct, BranchingProduct]:
             with Session(test_engine) as afc_test_session:
                 self.add_from_class_tester(afc_test_session, product_class)
                 afc_test_session.commit()
@@ -55,13 +55,7 @@ class TestDBSupportFunctions:
                 self.added_content_tester(content_test_sesison, product_class)
 
     def add_from_class_tester(self, session, product_class: Base):
-        # Fill
         add_from_class(session, product_class)
-
-        # Ensure it's been filled
-        for table in expected_orms_in_db:
-            table_contents = get_all(session, table)
-            assert isinstance(table_contents, list) and table_contents != []
 
     def added_content_tester(self, session, product_class: Base):
         # There is content in all tables
@@ -76,10 +70,11 @@ class TestDBSupportFunctions:
         # Number of new routes and total routes in db is correct
         assert routes[-1].id == len(get_all(session, SupplyRoute))
 
-        # Routing between stockpoints is as follows: route1{sp1 -> sp2}, route2{sp2 -> sp3}
-        assert routes[0].sender.name == stockpoint_names_in_db[0]
-        assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
-        assert routes[1].receiver.name == stockpoint_names_in_db[2]
+        if product_class in (ProductA, FakeProduct):
+            # Routing between stockpoints is as follows: route1{sp1 -> sp2}, route2{sp2 -> sp3}
+            assert routes[0].sender.name == stockpoint_names_in_db[0]
+            assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
+            assert routes[1].receiver.name == stockpoint_names_in_db[2]
 
         new_product_instance = product_class()
         if product_class is not FakeProduct:
