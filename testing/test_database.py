@@ -46,25 +46,26 @@ class TestConfig:
 
 class TestDBSupportFunctions:
     def test_add_from_classes(self):
+        highest_id_numbers = [0] * len(expected_orms_in_db)
         for product_class in [ProductA, FakeProduct, BranchingProduct]:
             with Session(test_engine) as afc_test_session:
                 add_from_class(afc_test_session, product_class)
                 afc_test_session.commit()
 
             with Session(test_engine) as content_test_sesison:
-                self.added_content_tester(content_test_sesison, product_class)
+                highest_id_numbers = self.added_content_tester(content_test_sesison, product_class, highest_id_numbers)
 
-    def added_content_tester(self, session, product_class: Base):
-        # There is content in all tables
-        for table in expected_orms_in_db:
-            table_contents = get_all(session, table)
-            assert table_contents != []
+    def added_content_tester(self, session, product_class: Base, old_highest_id_numbers):
+        # There is new content in all tables
+        new_highest_id_numbers = [get_all(session, table)[-1].id for table in expected_orms_in_db]
+        for i in range(len(expected_orms_in_db)):
+            assert new_highest_id_numbers[i] > old_highest_id_numbers[i]
 
         latest_product_in_db = get_all(session, Product)[-1]
         stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
         routes = latest_product_in_db.supply_routes
 
-        # Number of new routes and total routes in db is correct
+        # Number of routes and last id number match
         assert routes[-1].id == len(get_all(session, SupplyRoute))
 
         if product_class in (ProductA, FakeProduct):
@@ -81,6 +82,8 @@ class TestDBSupportFunctions:
 
         # ... but the actual objects are *not* the same
         assert set(latest_product_in_db.stock_points) != set(new_product_instance.stock_points)
+
+        return new_highest_id_numbers
 
 
 class TestQueryFilters:
