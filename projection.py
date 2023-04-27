@@ -122,7 +122,7 @@ class ProjectionCTP(StockProjection):
             raise NotImplementedError('Can only project ctp from incoming route.')
         else:
             self.df['cum_supply'] = np.cumsum(self.df['supply'])
-            self.df['cum_capacity'] = potential_capacity(routes, self.df.index)
+            self.df['cum_capacity'] = potential_capacity(routes, self.dates_range)
 
             self.df['unused_capacity'] = self.df[['cum_supply', 'cum_capacity']].max(axis=1) - self.df['cum_supply']
             # Purge premature "unused capacity" which is in fact committed to a later delivery.
