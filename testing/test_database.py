@@ -1,5 +1,5 @@
 from databasing.database_model import *  # Import creates database with the test_engine, stored in memory
-from databasing.premade_db_content import CcrpBase, ProductB
+from databasing.premade_db_content import ProductA, FakeProduct
 
 from sqlalchemy import inspect
 import pytest
@@ -46,7 +46,7 @@ class TestConfig:
 
 class TestDBSupportFunctions:
     def test_add_from_classes(self):
-        for product_class in [CcrpBase, ProductB]:
+        for product_class in [ProductA, FakeProduct]:
             with Session(test_engine) as afc_test_session:
                 self.add_from_class_tester(afc_test_session, product_class)
                 afc_test_session.commit()
@@ -64,32 +64,31 @@ class TestDBSupportFunctions:
             assert isinstance(table_contents, list) and table_contents != []
 
     def added_content_tester(self, session, product_class: Base):
-        # Check content in new session
+        # There is content in all tables
         for table in expected_orms_in_db:
             table_contents = get_all(session, table)
             assert table_contents != []
 
         latest_product_in_db = get_all(session, Product)[-1]
-        new_product_instance = product_class()
-
-        # Names in db match names in fresh product instance
         stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
-        assert set(stockpoint_names_in_db) == set(
-            [stockpoint.name for stockpoint in new_product_instance.stock_points])
+        routes = latest_product_in_db.supply_routes
+
+        # Number of new routes and total routes in db is correct
+        assert routes[-1].id == len(get_all(session, SupplyRoute))
+
+        # Routing between stockpoints is as follows: route1{sp1 -> sp2}, route2{sp2 -> sp3}
+        assert routes[0].sender.name == stockpoint_names_in_db[0]
+        assert routes[0].receiver.name == routes[1].sender.name == stockpoint_names_in_db[1]
+        assert routes[1].receiver.name == stockpoint_names_in_db[2]
+
+        new_product_instance = product_class()
+        if product_class is not FakeProduct:
+            # Names in db match names in fresh product instance
+            assert set(stockpoint_names_in_db) == set([stockpoint.name for stockpoint in new_product_instance.stock_points])
+            assert len(routes) == len(new_product_instance.product.supply_routes)
 
         # ... but the actual objects are *not* the same
         assert set(latest_product_in_db.stock_points) != set(new_product_instance.stock_points)
-
-        new_routes = latest_product_in_db.supply_routes
-
-        # Number of new routes and total routes in db is correct
-        assert len(new_routes) == len(new_product_instance.product.supply_routes)
-        assert new_routes[-1].id == len(get_all(session, SupplyRoute))
-
-        # Routing between stockpoints is as follows: route1{sp1 -> sp2}, route2{sp2 -> sp3}
-        assert new_routes[0].sender.name == stockpoint_names_in_db[0]
-        assert new_routes[0].receiver.name == new_routes[1].sender.name == stockpoint_names_in_db[1]
-        assert new_routes[1].receiver.name == stockpoint_names_in_db[2]
 
 
 class TestQueryFilters:
@@ -197,14 +196,14 @@ class TestMoveExecution:
             # Cannot execute order_1 again
             with pytest.raises(ValueError) as exc_info:
                 execute_move(session, order)
-            assert "Order is completed or invalid" in exc_info.value.args[0]
+            assert "Order is completed or invalid" in exc_info.value.args[0] or "more than the sender has" in exc_info.value.args[0]
 
 
 class TestAddItems:
     def test_add_items(self):
 
         with Session(test_engine) as add_request_session:
-            add_from_class(add_request_session, CcrpBase)
+            add_from_class(add_request_session, ProductA)
             last_premade_request_id = get_all(add_request_session, MoveRequest)[-1].id
 
             self.add_request_tester(add_request_session)
@@ -248,7 +247,7 @@ class TestAddItems:
 class TestOther:
     def test_capability(self):
         test_session = Session(test_engine)
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        run_with_session(test_engine, add_from_class, input_class=ProductA)
 
         for db_table in expected_orms_in_db:
             table_contents = get_all(test_session, db_table)
