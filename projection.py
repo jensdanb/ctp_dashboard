@@ -92,11 +92,17 @@ class ProjectionATP(StockProjection):
         return plt
 
 
-def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
-    column = pd.Series(data=[route.capacity] * len(df.index), index=df.index)
+def route_capacity(route, n_days, index):
+    column = pd.Series(data=[route.capacity] * n_days, index=index)
     column[:route.lead_time] = [0] * route.lead_time
-    column = np.cumsum(column)
-    return column
+    return np.cumsum(column)
+
+
+def potential_capacity(routes: list[SupplyRoute], index) -> pd.Series:
+    columns = {str(route.id): route_capacity(route, len(index), index) for route in routes}
+    frame = pd.DataFrame(data=columns)
+    frame['total_capacity'] = frame.sum(axis=1)
+    return frame['total_capacity']
 
 
 class ProjectionCTP(StockProjection):
@@ -110,17 +116,15 @@ class ProjectionCTP(StockProjection):
         elif len(incoming_routes) != 1:
             raise NotImplementedError('Can only project ctp from SINGLE incoming route.')
         else:
-            for route in incoming_routes:
-                self.project_ctp(route)
+            self.project_ctp(incoming_routes)
         self.plot = self.make_plot(plot_period)
 
-    def project_ctp(self, route: SupplyRoute):
-        receiver = route.receiver
-        if not self.stockpoint_name == receiver.name:
+    def project_ctp(self, routes: list[SupplyRoute]):
+        if not all([self.stockpoint_name == route.receiver.name for route in routes]) :
             raise NotImplementedError('Can only project ctp from incoming route.')
         else:
             self.df['cum_supply'] = np.cumsum(self.df['supply'])
-            self.df['cum_capacity'] = potential_capacity(self.df, route)
+            self.df['cum_capacity'] = potential_capacity(routes, self.df.index)
             self.df['unused_capacity'] = self.df[['cum_supply', 'cum_capacity']].max(axis=1) - self.df['cum_supply']
 
             # Purge premature "unused capacity" which is in fact committed to a later delivery.

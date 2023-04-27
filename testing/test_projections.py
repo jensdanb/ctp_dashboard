@@ -98,7 +98,7 @@ class TestCTP:
 
             # Outgoing route is invalid and raises error
             with pytest.raises(NotImplementedError):
-                projection2.project_ctp(out_routes[0])
+                projection2.project_ctp(out_routes)
 
     def test_randomised_projections(self):
         with Session(test_engine) as ctp_session_random:
