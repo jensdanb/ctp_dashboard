@@ -51,22 +51,8 @@ class StockProjection:
         return df
 
 
-""" Helper functions: """
-
-
 def minimum_future(values: list):
     return [min(values[i:]) for i in range(len(values))]
-
-
-def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
-    column = pd.Series(data=[route.capacity] * len(df.index), index=df.index)
-    column = [route.capacity] * len(df.index)
-    column[:route.lead_time] = [0] * route.lead_time
-    column = np.cumsum(column)
-    return column
-
-
-""" Child classes: """
 
 
 class ProjectionATP(StockProjection):
@@ -106,17 +92,25 @@ class ProjectionATP(StockProjection):
         return plt
 
 
+def potential_capacity(df: pd.DataFrame, route: SupplyRoute) -> pd.Series:
+    column = pd.Series(data=[route.capacity] * len(df.index), index=df.index)
+    column[:route.lead_time] = [0] * route.lead_time
+    column = np.cumsum(column)
+    return column
+
+
 class ProjectionCTP(StockProjection):
     def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
         super().__init__(session, stockpoint, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
         incoming_routes = get_incoming_routes(session, stockpoint)
+
         if not incoming_routes:
             self.df['CTP'] = self.df["ATP"]
         elif len(incoming_routes) != 1:
             raise NotImplementedError('Can only project ctp from SINGLE incoming route.')
         else:
-            for route in get_incoming_routes(session, stockpoint):
+            for route in incoming_routes:
                 self.project_ctp(route)
         self.plot = self.make_plot(plot_period)
 
@@ -132,12 +126,13 @@ class ProjectionCTP(StockProjection):
             # Purge premature "unused capacity" which is in fact committed to a later delivery.
             i = 0
             for unused_capacity in self.df['unused_capacity'][::-1]:
-                if unused_capacity == 0:
-                    self.df['unused_capacity'].iloc[:self.duration - i] = 0
+                if unused_capacity <= 0:
+                    self.df['unused_capacity'].iloc[:self.duration + 1 - i] = 0
                     break
                 i += 1
 
             self.df["CTP"] = self.df["ATP"] + self.df['unused_capacity']
+            self.df["CTP"] = self.df[['ATP', 'CTP']].max(axis=1)
             self.df.drop(columns=['cum_supply', 'cum_capacity', 'unused_capacity'], inplace=True)
 
     def make_plot(self, duration: int):

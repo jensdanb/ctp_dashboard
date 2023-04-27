@@ -1,13 +1,11 @@
-""" Database engine is initializes upon import!!! """
+from databasing.database_model import *
+from databasing.premade_db_content import ProductA, FakeProduct
+from projection import ProjectionATP, ProjectionCTP
+from forecasting import generate_random_requests
 
 import pandas as pd
 import numpy as np
 import random
-
-from databasing.database_model import *
-from databasing.premade_db_content import ProductA
-from projection import ProjectionATP, ProjectionCTP
-from forecasting import generate_random_requests
 
 
 def wave_list_experiments(df: pd.DataFrame):
@@ -44,7 +42,7 @@ def check_ctp_plots(engine, stockpoint_id):
     # Execute orders in next five days
     day = date.today()
     with Session(engine) as action_session:
-        for i in range(5):
+        for i in range(2):
             execute_scheduled(action_session, day)
             day += timedelta(days=1)
         action_session.commit()
@@ -87,7 +85,7 @@ if __name__ == "__main__":
     sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
-        add_from_class_if_db_is_empty(init_session, ProductA)
+        add_from_class_if_db_is_empty(init_session, FakeProduct)
         stockpoint = get_all(init_session, StockPoint)[1]
 
     check_ctp_plots(sandbox_engine, stockpoint.id)

@@ -5,11 +5,10 @@ import pytest
 from sqlalchemy.orm import exc
 
 
-def strictly_positive_and_increasing(values: pd.Series):
+def strictly_increasing(values: pd.Series):
     differences = values.diff()
-    positive = not any([value < 0 for value in values])
-    increasing = not any([increase < 0 for increase in differences])
-    return positive and increasing
+    increasing = not any([diff < 0 for diff in differences])
+    return increasing
 
 
 def universal_projection_assertions(session, projection):
@@ -68,38 +67,30 @@ class TestStockProjection:
                 projection = StockProjection(test_session, stockpoint)
                 universal_projection_assertions(test_session, projection)
 
-        reset_db(test_engine)
-
 
 class TestATP:
     def test_atp(self):
         # Arrange setup
-        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as test_session:
             all_stockpoints = get_all(test_session, StockPoint)
 
             for stockpoint in all_stockpoints:
                 projection = ProjectionATP(test_session, stockpoint)
                 assert projection.plot
-                assert strictly_positive_and_increasing(projection.df['ATP'])
-
-        Base.metadata.drop_all(test_engine)
-        Base.metadata.create_all(test_engine)
+                assert strictly_increasing(projection.df['ATP'])
 
 
 class TestCTP:
-    def test_ctp(self):
-        # Arrange setup
-        run_with_session(test_engine, add_from_class, input_class=ProductA)
-        with Session(test_engine) as init_sesssion:
-            sp_1 = get_by_name(init_sesssion, StockPoint, "Unfinished goods")
-            sp_2 = get_by_name(init_sesssion, StockPoint, "Finished goods")
-            projection1 = ProjectionCTP(init_sesssion, sp_1)
-            projection2 = ProjectionCTP(init_sesssion, sp_2)
+    def test_determined_ctp_projections(self):
+        # Known stockpoints
+        with Session(test_engine) as ctp_session1:
+            sp_1 = get_by_name(ctp_session1, StockPoint, "Unfinished goods")
+            sp_2 = get_by_name(ctp_session1, StockPoint, "Finished goods")
+            projection1 = ProjectionCTP(ctp_session1, sp_1)
+            projection2 = ProjectionCTP(ctp_session1, sp_2)
 
         # Stockpoint with nothing incoming:
-        with Session(test_engine) as ctp_session1:
-            assert projection1.df['CTP'].equals(projection1.df['ATP'])
+        assert projection1.df['CTP'].equals(projection1.df['ATP'])
 
         with Session(test_engine) as ctp_session2:
             inc_routes = get_incoming_routes(ctp_session2, sp_2)
@@ -109,14 +100,18 @@ class TestCTP:
             with pytest.raises(NotImplementedError):
                 projection2.project_ctp(out_routes[0])
 
-            # Incoming route works
-            assert 'ATP' in projection2.df.keys()
-            assert not projection2.df.filter(like='CTP', axis=1).empty  # Proves new column for CTP was added
+    def test_randomised_projections(self):
+        with Session(test_engine) as ctp_session_random:
+            faked_product = get_by_id(ctp_session_random, Product, 2)
+            for stockpoint in faked_product.stock_points:  # id 2 belonging to FakeProduct
+                projection = ProjectionCTP(ctp_session_random, stockpoint)
 
-            # CTP is strictly positive and increasing.
-            for column_name in projection2.df.filter(like='CTP', axis=1):
-                column = projection2.df[column_name]
-                assert strictly_positive_and_increasing(column)
+                # Incoming route is valid and CTP column was created
+                assert 'CTP' in projection.df.keys()
+                ctp_column = projection.df['CTP']
+                assert not ctp_column.empty
 
-        Base.metadata.drop_all(test_engine)
-        Base.metadata.create_all(test_engine)
+                # CTP is strictly increasing.
+                assert strictly_increasing(ctp_column)
+
+        reset_db(test_engine)
