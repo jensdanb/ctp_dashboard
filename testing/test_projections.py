@@ -24,36 +24,29 @@ def universal_projection_assertions(session, projection):
 class TestStockProjection:
     # Setup inputs
     def test_initialization(self):
-        run_with_session(test_engine, add_from_class, input_class=ProductA)
-        with Session(test_engine) as test_session:
-            all_stockpoints = get_all(test_session, StockPoint)
+        for product_class in [ProductA, FakeProduct]:
+            run_with_session(test_engine, add_from_class, input_class=product_class)
+            with Session(test_engine) as init_session:
+                all_stockpoints = get_all(init_session, StockPoint)
 
-            """ invalid arguments raise exceptions: """
-            invalid_sessions = [test_engine, StockPoint, None, "foo"]
-            for invalid_session in invalid_sessions:
-                with pytest.raises(AttributeError):
-                    projection = StockProjection(invalid_session, all_stockpoints[0])
+                """ invalid arguments raise exceptions: """
+                invalid_sessions = [test_engine, StockPoint, None, "foo"]
+                for invalid_session in invalid_sessions:
+                    with pytest.raises(AttributeError):
+                        projection = StockProjection(invalid_session, all_stockpoints[0])
 
-            invalid_db_objects = []
-            for table in expected_orms_in_db - {StockPoint}:
-                invalid_db_objects += get_all(test_session, table)
+                invalid_db_objects = [get_all(init_session, table) for table in expected_orms_in_db - {StockPoint}]
+                for invalid_object in invalid_db_objects:
+                    with pytest.raises(AttributeError) as exc_info:
+                        projection = StockProjection(init_session, invalid_object)
 
-            for invalid_object in invalid_db_objects:
-                with pytest.raises(AttributeError) as exc_info:
-                    projection = StockProjection(test_session, invalid_object)
-
-            """ valid arguments do not raise exceptions: """
-            for stockpoint in all_stockpoints:
-                projection = StockProjection(test_session, stockpoint)
-
-        Base.metadata.drop_all(test_engine)
-        Base.metadata.create_all(test_engine)
+                """ valid arguments do not raise exceptions: """
+                for stockpoint in all_stockpoints:
+                    projection = StockProjection(init_session, stockpoint)
 
     def test_post_init(self):
-        # basic init, repeat of test_initialization
-        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as test_session:
-            test_sp = get_by_name(test_session, StockPoint, "Finished goods")
+            test_sp = get_by_id(test_session, StockPoint, 2)  # In ProductA: "Finished goods"
             projection = ProjectionATP(test_session, test_sp)
 
         # check we are disconnected from database
@@ -77,8 +70,7 @@ class TestStockProjection:
                 assert projection.start_date < projection.final_date
                 assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
 
-        Base.metadata.drop_all(test_engine)
-        Base.metadata.create_all(test_engine)
+        reset_db(test_engine)
 
 
 class TestATP:
