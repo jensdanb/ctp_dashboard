@@ -5,7 +5,6 @@ from sqlalchemy import inspect
 import pytest
 
 
-# Arrange
 def capture_sql_exception(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
@@ -49,6 +48,7 @@ class TestDBSupportFunctions:
     def test_add_from_classes(self):
         for product_class in [CcrpBase, ProductB]:
             self.add_from_class_tester(product_class)
+            self.added_content_tester(product_class)
 
     def add_from_class_tester(self, product_class: Base):
         with Session(test_engine) as test_afc_session_a:
@@ -62,6 +62,7 @@ class TestDBSupportFunctions:
 
             test_afc_session_a.commit()
 
+    def added_content_tester(self, product_class: Base):
         # Check content in new session
         with Session(test_engine) as test_afc_session_b:
             for table in expected_orms_in_db:
