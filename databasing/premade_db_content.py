@@ -98,3 +98,46 @@ class FakeProduct():
                                     ]
                                 )
                 )
+
+
+class BranchingProduct():
+    def __init__(self):
+        fake = Faker()
+        fake.add_provider(lorem)
+        fake.add_provider(color)
+
+        self.product = Product(
+            name='Product With Branching Routes',
+            price=randint(20, 200),
+        )
+        self.stock_points = [
+            StockPoint(product=self.product, name="Stockpoint " + str(s+1), current_stock=choice([randrange(150, 700, 50)]))
+            for s in range(7)
+        ]
+        self.supply_routes = []
+        connections = [(1, 5), (2, 5), (2, 6), (3, 6), (4, 7), (5, 7), (6, 7)]
+        for connection in connections:
+            sender_nr, receiver_nr = connection[0], connection[1]
+            self.supply_routes.append(
+                SupplyRoute(
+                    product=self.product,
+                    sender=self.stock_points[sender_nr-1],
+                    receiver=self.stock_points[receiver_nr-1],
+                    capacity=40
+                )
+            )
+        for route in self.supply_routes:
+            route.move_requests = []
+            n_requests = randint(1, 3)
+            for request_n in range(n_requests):
+                quantity = randrange(40, 120, 20)
+                delivery_time = randint(4, 15)
+                route.move_requests.append(
+                    MoveRequest(quantity=quantity,
+                                date_of_registration=date.today(),
+                                requested_delivery_date=date.today() + timedelta(days=delivery_time),
+                                move_orders=[
+                                    MoveOrder(quantity=quantity, order_date=date.today() + timedelta(days=delivery_time))
+                                    ]
+                                )
+                )
