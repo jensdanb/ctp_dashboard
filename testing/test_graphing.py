@@ -1,4 +1,3 @@
-from databasing.premade_db_content import CcrpBase, ProductB, FakeProduct
 from databasing.relationship_graphing import *
 
 import pytest
@@ -6,7 +5,7 @@ import pytest
 
 def test_product_graph():
     with dbm.Session(dbm.test_engine) as init_session:
-        dbm.reset_and_fill_db(dbm.test_engine, init_session, [CcrpBase, FakeProduct])
+        dbm.reset_and_fill_db(dbm.test_engine, init_session, [ProductA, FakeProduct])
         init_session.commit()
 
     with dbm.Session(dbm.test_engine) as test_session:

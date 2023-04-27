@@ -1,4 +1,4 @@
-from databasing.premade_db_content import CcrpBase
+from databasing.premade_db_content import ProductA, FakeProduct
 from projection import *
 
 import pytest
@@ -24,7 +24,7 @@ def universal_projection_assertions(session, projection):
 class TestStockProjection:
     # Setup inputs
     def test_initialization(self):
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as test_session:
             all_stockpoints = get_all(test_session, StockPoint)
 
@@ -51,7 +51,7 @@ class TestStockProjection:
 
     def test_post_init(self):
         # basic init, repeat of test_initialization
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as test_session:
             test_sp = get_by_name(test_session, StockPoint, "Finished goods")
             projection = ProjectionATP(test_session, test_sp)
@@ -84,7 +84,7 @@ class TestStockProjection:
 class TestATP:
     def test_atp(self):
         # Arrange setup
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as test_session:
             all_stockpoints = get_all(test_session, StockPoint)
 
@@ -100,7 +100,7 @@ class TestATP:
 class TestCTP:
     def test_ctp(self):
         # Arrange setup
-        run_with_session(test_engine, add_from_class, input_class=CcrpBase)
+        run_with_session(test_engine, add_from_class, input_class=ProductA)
         with Session(test_engine) as init_sesssion:
             sp_1 = get_by_name(init_sesssion, StockPoint, "Unfinished goods")
             sp_2 = get_by_name(init_sesssion, StockPoint, "Finished goods")

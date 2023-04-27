@@ -1,5 +1,5 @@
 from databasing import database_model as dbm
-from databasing.premade_db_content import CcrpBase, ProductB, FakeProduct
+from databasing.premade_db_content import ProductA, ProductB, FakeProduct
 
 from h2o_wave import Q, ui
 

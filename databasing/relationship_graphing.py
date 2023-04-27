@@ -1,4 +1,4 @@
-from databasing.premade_db_content import ProductB, FakeProduct
+from databasing.premade_db_content import ProductA, FakeProduct
 import databasing.database_model as dbm
 
 from pyvis.network import Network
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     graph_test_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     with dbm.Session(graph_test_engine) as init_session:
         dbm.reset_db(graph_test_engine)
-        dbm.add_from_class(init_session, ProductB)
+        dbm.add_from_class(init_session, ProductA)
         dbm.add_from_class(init_session, FakeProduct)
         init_session.commit()
 
