@@ -48,14 +48,11 @@ class TestDBSupportFunctions:
     def test_add_from_classes(self):
         for product_class in [ProductA, FakeProduct, BranchingProduct]:
             with Session(test_engine) as afc_test_session:
-                self.add_from_class_tester(afc_test_session, product_class)
+                add_from_class(afc_test_session, product_class)
                 afc_test_session.commit()
 
             with Session(test_engine) as content_test_sesison:
                 self.added_content_tester(content_test_sesison, product_class)
-
-    def add_from_class_tester(self, session, product_class: Base):
-        add_from_class(session, product_class)
 
     def added_content_tester(self, session, product_class: Base):
         # There is content in all tables
