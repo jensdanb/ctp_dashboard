@@ -201,7 +201,6 @@ class TestMoveExecution:
 
 class TestAddItems:
     def test_add_items(self):
-
         with Session(test_engine) as add_request_session:
             add_from_class(add_request_session, ProductA)
             last_premade_request_id = get_all(add_request_session, MoveRequest)[-1].id
@@ -212,7 +211,6 @@ class TestAddItems:
         with Session(test_engine) as add_moves_session:
             # Ensure we have the new_request from previous session:
             new_request = get_all(add_moves_session, MoveRequest)[-1]
-
 
             self.add_moves_tester(add_moves_session, new_request)
 
