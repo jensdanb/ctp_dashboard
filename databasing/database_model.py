@@ -103,6 +103,9 @@ class MoveRequest(Base):
     quantity: Mapped[int]
     quantity_delivered: Mapped[int] = mapped_column(default=0)
 
+    def unanswered_quantity(self):
+        return self.quantity - sum([order.quantity for order in self.move_orders])
+
     def __repr__(self):
         return f"Request {self.quantity} {self.route.product.name} from {self.route.sender.name} to " \
                f"{self.route.receiver.name} for delivery by {self.requested_delivery_date}."
@@ -204,8 +207,8 @@ def add_request(session, route, delivery_time, quantity):
 
 
 def fill_request(request):
-    unanswered_request_quantity = request.quantity - sum([order.quantity for order in request.move_orders])
-    order = MoveOrder(request=request, order_date=request.requested_delivery_date, quantity=unanswered_request_quantity)
+    quantity = request.unanswered_quantity()
+    order = MoveOrder(request=request, order_date=request.requested_delivery_date, quantity=quantity)
     return order
 
 
