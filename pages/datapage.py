@@ -1,5 +1,5 @@
 from databasing import database_model as dbm
-from databasing.premade_db_content import ProductA, FakeProduct
+from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 import databasing.relationship_graphing as graphing
 from pages.shared_content import get_selected, product_dropdown
 
@@ -38,7 +38,7 @@ def layout(q: Q):
 async def data_page(q: Q):
     if q.args.reset_db:
         with dbm.Session(q.user.db_engine) as fill_session:
-            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [ProductA, FakeProduct])
+            dbm.reset_and_fill_db(q.user.db_engine, fill_session, [ProductA, FakeProduct, BranchingProduct])
             fill_session.commit()
         show_sc_overview(q)
     elif q.args.show_supply_routes:
