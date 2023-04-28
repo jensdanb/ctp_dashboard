@@ -10,7 +10,7 @@ This is an app for managing inventory in a supply chain and demonstrating the Ca
 
 
 When you open the app in your browser, a database containing two Products is generated for you, and each product has a number of Stockpoints (inventory locations) connected by SupplyRoutes, representing the supply chain. An example (Product A) has the stockpoints Unfinished Goods -> Finished Goods -> Customer Inventory connected by two SupplyRoutes Route 1 and Route 2. 
-![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/234340769-e4e72008-e183-4de3-9510-ccdd5b79fa79.png)
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/235258216-aad1b400-fd54-4656-aecc-5ba6a60a8b45.png)
 
 
 To move goods along a SupplyRoute, a MoveRequest for a certain quantity is first created, then confirmed with one or more MoveOrders to fulfill the requested quantity. Inventory is transferred when the MoveOrder is executed, and at the same time the completion status of the MoveRequest is updated. 
