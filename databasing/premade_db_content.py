@@ -71,7 +71,7 @@ class FakeProduct():
         )
         self.stock_points = [
             StockPoint(product=self.product, name="Stockpoint " + str(s+1), current_stock=choice([0, randrange(100, 1000, 50)]))
-            for s in range(randint(3, 5))
+            for s in range(randint(4, 5))
         ]
         self.supply_routes = []
         for upstream, downstream in itertools.pairwise(self.stock_points):
