@@ -46,7 +46,7 @@ Plotting page UI status on 03 April 2023:
 
 If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online: None of them are very hard, and the guide will explain them better than I could do here. These instructions are for Linux machines. Details of each step is slightly different for MacOS and more different for Windows, but the general procedure should be roughly the same. 
 
-1: Install Python3 on your computer
+1: Install Python3.10 on your computer
 
 
 2: Use git to clone the project from this url address to a folder on your machine
