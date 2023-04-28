@@ -34,7 +34,7 @@ class TestStockProjection:
                     with pytest.raises(AttributeError):
                         projection = StockProjection(invalid_session, all_stockpoints[0])
 
-                invalid_db_objects = [get_all(init_session, table) for table in expected_orms_in_db - {StockPoint}]
+                invalid_db_objects = [get_all(init_session, table) for table in set(expected_orms_in_db) - {StockPoint}]
                 for invalid_object in invalid_db_objects:
                     with pytest.raises(AttributeError) as exc_info:
                         projection = StockProjection(init_session, invalid_object)
