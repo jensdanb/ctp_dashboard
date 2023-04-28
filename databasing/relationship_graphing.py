@@ -23,8 +23,8 @@ def product_to_graph(session, product: dbm.Product):
 
 
 def graph_to_net(graph: nx.DiGraph):
-    pixel_height = str(50 + 100 * len(graph.nodes))
-    net = Network(height=f'{pixel_height}px', width='350px', directed=True)
+    pixel_height = str(230 + 50 * len(graph.edges))
+    net = Network(height=f'{pixel_height}px', width=f'{pixel_height}px', directed=True)
     net.toggle_physics(False)
     net.from_nx(graph)
     return net

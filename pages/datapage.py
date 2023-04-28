@@ -88,11 +88,12 @@ def show_graph(q: Q, session):
     selected_product: dbm.Product = get_selected(q, session, dbm.Product)
     html_content = graphing.product_to_html_str(session, selected_product)
 
+    graph_pixels = 250 +len(selected_product.supply_routes) * 50
     q.page['graph'] = ui.form_card(
         box='graph_zone',
         items=[
             ui.text_xl('Graph: Supply Chain for product ' + selected_product.name),
-            ui.frame(content=html_content, height='500px', width='350px')
+            ui.frame(content=html_content, height=f'{str(graph_pixels)}px', width=f'{str(graph_pixels)}px')
         ]
     )
 
