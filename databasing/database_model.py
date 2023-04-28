@@ -131,7 +131,7 @@ class MoveOrder(Base):
         return f"Move {self.quantity} along route {self.request.route} on {self.order_date} for request {self.request.id}"
 
 
-expected_orms_in_db = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}
+expected_orms_in_db = (Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder)
 
 test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
 Base.metadata.create_all(test_engine)
