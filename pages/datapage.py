@@ -16,8 +16,9 @@ def layout(q: Q):
                     ui.zone('db_control_zone_a', size='50%'),
                     ui.zone('db_control_zone_b', size='50%'),
                 ]),
-                ui.zone('table_zone'),
                 ui.zone('graph_zone'),
+                ui.zone('table_zone'),
+
             ]
         ),
         ui.layout(
@@ -28,8 +29,9 @@ def layout(q: Q):
                     ui.zone('db_control_zone_a', size='50%'),
                     ui.zone('db_control_zone_b', size='50%'),
                 ]),
-                ui.zone('table_zone'),
                 ui.zone('graph_zone'),
+                ui.zone('table_zone'),
+
             ]
         )
     ])
