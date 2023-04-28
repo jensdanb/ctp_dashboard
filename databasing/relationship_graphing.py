@@ -1,4 +1,4 @@
-from databasing.premade_db_content import ProductA, FakeProduct
+from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 import databasing.database_model as dbm
 
 from pyvis.network import Network
