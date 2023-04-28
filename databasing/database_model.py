@@ -54,6 +54,7 @@ class SupplyRoute(Base):
     __tablename__ = "supply_route"
     __table_args__ = (UniqueConstraint("sender_id", "receiver_id", name="Not_route_to_self"),)
 
+    # Identity
     id: Mapped[int] = mapped_column(primary_key=True)
 
     # Relationships
@@ -127,12 +128,12 @@ class MoveOrder(Base):
     completion_status: Mapped[int] = mapped_column(default=0)  # Not completed: 0. Completed: 1
 
     def __repr__(self):
-        return f"Move {self.quantity} {self.request.route.product.name} from {self.request.route.sender.name} to " \
-               f"{self.request.route.receiver.name} on {self.order_date}."
+        return f"Move {self.quantity} along route {self.request.route} on {self.order_date} for request {self.request.id}"
+
 
 expected_orms_in_db = {Product, StockPoint, SupplyRoute, MoveRequest, MoveOrder}
 
-test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)  # In-memory database. Not persistent.
+test_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
 Base.metadata.create_all(test_engine)
 
 
@@ -192,6 +193,7 @@ def reset_and_fill_db(engine, session, input_classes):
     for input_class in input_classes:
         add_from_class(session, input_class)
 
+
 def add_from_class_if_db_is_empty(session, input_class):
     if not session.scalars(select(Product)).all():
         run_in_session(session, add_from_class, input_class=input_class)
@@ -222,7 +224,8 @@ def execute_move(session: Session, move: MoveOrder):
         raise ValueError("Cannot execute. Order is completed or invalid. ")
     elif not sender.current_stock >= move.quantity:
         raise ValueError("Cannot move more than the sender has!")
-
+    elif move.quantity < 0 and abs(move.quantity) > receiver.current_stock:
+        raise ValueError("Cannot reverse move more than the receiver has!")
     # Execution
     else:
         sender.current_stock -= move.quantity
