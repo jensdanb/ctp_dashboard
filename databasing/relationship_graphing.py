@@ -9,7 +9,7 @@ from os import remove
 def product_to_graph(session, product: dbm.Product):
     graph = nx.DiGraph()
 
-    node_list = [(stockpoint.id, {'label': f'Stockpoint {stockpoint.id}', 'y': 100 * stockpoint.id}) for stockpoint in product.stock_points]
+    node_list = [(stockpoint.id, {'label': stockpoint.name}) for stockpoint in product.stock_points]  # , 'y': 100 * stockpoint.id
     graph.add_nodes_from(node_list)
 
     edge_list = [(route.sender_id, route.receiver_id, {'label': f'Route {route.id}'}) for route in product.supply_routes]
