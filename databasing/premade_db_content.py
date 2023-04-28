@@ -107,7 +107,7 @@ class BranchingProduct():
         fake.add_provider(color)
 
         self.product = Product(
-            name='Product With Branching Routes',
+            name='Product B',
             price=randint(20, 200),
         )
         self.stock_points = [
