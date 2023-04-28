@@ -226,19 +226,17 @@ class TestAddItems:
             add_moves_session.commit()
 
         with Session(test_engine) as execute_moves_session:
-            guard_clause_1_triggered = False
-            guard_clause_2_triggered = False
+            guard_clause_triggered = False
             for request in get_all(execute_moves_session, MoveRequest):
                 assert request.unanswered_quantity() == 0
                 no_moves_blocked = True
                 for move in request.move_orders:
                     if move.completion_status != 0 or move.quantity > request.route.sender.current_stock:
-                        guard_clause_1_triggered = True
+                        guard_clause_triggered = True
                         no_moves_blocked = False
                         with pytest.raises(ValueError):
                             execute_move(execute_moves_session, move)
                     elif move.quantity < 0 and abs(move.quantity) > request.route.receiver.current_stock:
-                        guard_clause_2_triggered = True
                         no_moves_blocked = False
                         with pytest.raises(ValueError):
                             execute_move(execute_moves_session, move)
@@ -248,7 +246,7 @@ class TestAddItems:
                 if no_moves_blocked:
                     assert request.quantity_delivered == request.quantity
                     assert request.unanswered_quantity() == 0
-
+            assert guard_clause_triggered
 
 
 
