@@ -45,13 +45,13 @@ async def data_page(q: Q):
         show_sc_overview(q)
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
-            await show_db_contents(q, session, getattr(dbm, q.args.show_supply_routes))
+            await show_table(q, session, getattr(dbm, q.args.show_supply_routes))
     elif q.args.show_move_requests:
         with dbm.Session(q.user.db_engine) as session:
-            await show_db_contents(q, session, dbm.MoveRequest)
+            await show_table(q, session, dbm.MoveRequest)
     elif q.args.show_move_orders:
         with dbm.Session(q.user.db_engine) as session:
-            await show_db_contents(q, session, dbm.MoveOrder)
+            await show_table(q, session, dbm.MoveOrder)
     elif q.args.show_graph:
         with dbm.Session(q.user.db_engine) as session:
             show_graph(q, session)
@@ -101,11 +101,11 @@ def show_graph(q: Q, session):
 
 
 
-async def show_db_contents(q: Q, session, db_table: dbm.Base):
+async def show_table(q: Q, session, db_table: dbm.Base):
     title = db_table.__name__
     all_items = dbm.get_all(session, db_table)
 
-    conversion_dict  = conversion_dicts[db_table]
+    conversion_dict  = table_conversion_dicts[db_table]
     columns = [title] + list(conversion_dict.keys())
     items = build_stat_table(all_items, conversion_dict)
 
@@ -131,13 +131,13 @@ def format_stat_table(stat_table_items, item_type):
         case dbm.MoveOrder:
             return [format_table_item_move_order(item) for item in stat_table_items]
         case dbm.MoveRequest:
-            return [format_table_item_supply_route(item) for item in stat_table_items]
+            return [format_table_item_move_request(item) for item in stat_table_items]
         case _:
             print('No formatting function!')
             return stat_table_items
 
 
-conversion_dicts = {
+table_conversion_dicts = {
     dbm.Product: {  # 'Column name': 'attribute name in db'.
         'Name': 'name',
         'Price': 'price',
@@ -170,7 +170,7 @@ conversion_dicts = {
 }
 
 
-def format_table_item_supply_route(item):
+def format_table_item_move_request(item):
     quantity_ordered = int(item.values[0])
     quantity_delivered = int(item.values[1])
     if quantity_delivered < quantity_ordered // 2:
