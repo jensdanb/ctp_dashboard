@@ -194,11 +194,12 @@ def add_from_class_if_db_is_empty(session, input_class):
         run_in_session(session, add_from_class, input_class=input_class)
 
 
-def add_request(route, delivery_time, quantity):
+def add_request(session, route, delivery_time, quantity):
     reg_date = date.today()
     req_date = reg_date + timedelta(days=delivery_time)
-
     request = MoveRequest(route=route, date_of_registration=reg_date, requested_delivery_date=req_date, quantity=quantity)
+
+    session.add(request)
     return request
 
 
