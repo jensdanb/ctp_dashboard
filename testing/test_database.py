@@ -194,7 +194,7 @@ class TestMoveExecution:
 
 
 class TestAddItems:
-    def test_add_items(self):
+    def test_add_requests(self):
         with Session(test_engine) as init_session:
             reset_and_fill_db(test_engine, init_session, [ProductA, FakeProduct, BranchingProduct])
             route_id_list = [route.id for route in get_all(init_session, SupplyRoute)]
@@ -204,33 +204,52 @@ class TestAddItems:
         for route_id in route_id_list:
             with Session(test_engine) as add_request_session:
                 route_from_db = get_by_id(add_request_session, SupplyRoute, route_id)
-                new_request = add_request(add_request_session, route_from_db, 4, 51)  # Quantity must be an odd number for the next test (add_move_order) to get tested right!
+                new_request = add_request(add_request_session, route_from_db, 4, 51)
                 add_request_session.commit()
 
+        with Session(test_engine) as session:
+            # Ensure we have new requests
+            assert get_all(session, MoveRequest)[-1].id > last_premade_request_id
+
+    def test_add_moves(self):
         with Session(test_engine) as add_moves_session:
-            # Ensure we have the new_request from previous session:
-            assert get_all(add_moves_session, MoveRequest)[-1].id > last_premade_request_id
+            for request in get_all(add_moves_session, MoveRequest):
+                unanswered_quantity = request.unanswered_quantity()
 
-            for request in get_all(add_moves_session, MoveRequest)[last_premade_request_id:]:
-                self.add_move_tester(add_moves_session, request)
+                # Add two MoveOrder that together fulfills the request
+                partial_order = MoveOrder(request=request, order_date=date.today() + timedelta(days=2), quantity=request.quantity // 2)
+                add_moves_session.add(partial_order)
+                fill_order = fill_request(request)
+                add_moves_session.add(fill_order)
+                assert partial_order.quantity + fill_order.quantity == unanswered_quantity
 
-    def add_move_tester(self, session, request):
-        # Add MoveOrder that fulfills half the request
-        partial_order = MoveOrder(request=request, order_date=date.today() + timedelta(days=2),
-                                  quantity=request.quantity // 2)
-        session.add(partial_order)
+            add_moves_session.commit()
 
-        # The MoveOrder that automatically fills the remainder
-        fill_order = fill_request(request)
-        print(f'Partial order quantity: {partial_order.quantity}. Fill order quantity: {fill_order.quantity}')
-        session.add(fill_order)
-        # assert partial_order.quantity + fill_order.quantity == request.quantity
+        with Session(test_engine) as execute_moves_session:
+            guard_clause_1_triggered = False
+            guard_clause_2_triggered = False
+            for request in get_all(execute_moves_session, MoveRequest):
+                assert request.unanswered_quantity() == 0
+                no_moves_blocked = True
+                for move in request.move_orders:
+                    if move.completion_status != 0 or move.quantity > request.route.sender.current_stock:
+                        guard_clause_1_triggered = True
+                        no_moves_blocked = False
+                        with pytest.raises(ValueError):
+                            execute_move(execute_moves_session, move)
+                    elif move.quantity < 0 and abs(move.quantity) > request.route.receiver.current_stock:
+                        guard_clause_2_triggered = True
+                        no_moves_blocked = False
+                        with pytest.raises(ValueError):
+                            execute_move(execute_moves_session, move)
+                    else:
+                        execute_move(execute_moves_session, move)
 
-        # The MoveOrders are promised but not executed. Execute and check that delivery is complete.
-        # assert request.quantity_delivered == 0
-        execute_move(session, partial_order)
-        execute_move(session, fill_order)
-        # assert request.quantity_delivered == request.quantity
+                if no_moves_blocked:
+                    assert request.quantity_delivered == request.quantity
+                    assert request.unanswered_quantity() == 0
+
+
 
 
 class TestOther:
