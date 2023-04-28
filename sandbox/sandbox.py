@@ -1,5 +1,5 @@
 from databasing.database_model import *
-from databasing.premade_db_content import ProductA, FakeProduct
+from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 from projection import ProjectionATP, ProjectionCTP
 from forecasting import generate_random_requests
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     sandbox_engine = create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
     Base.metadata.create_all(sandbox_engine)
     with Session(sandbox_engine) as init_session:
-        add_from_class_if_db_is_empty(init_session, FakeProduct)
+        add_from_class_if_db_is_empty(init_session, BranchingProduct)
         stockpoint = get_all(init_session, StockPoint)[1]
 
     check_ctp_plots(sandbox_engine, stockpoint.id)
