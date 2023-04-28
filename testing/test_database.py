@@ -58,8 +58,9 @@ class TestDBSupportFunctions:
     def added_content_tester(self, session, product_class: Base, old_highest_id_numbers):
         # There is new content in all tables
         new_highest_id_numbers = [get_all(session, table)[-1].id for table in expected_orms_in_db]
-        for i in range(len(expected_orms_in_db)):
-            assert new_highest_id_numbers[i] > old_highest_id_numbers[i]
+
+        for new, old in zip(new_highest_id_numbers, old_highest_id_numbers):
+            assert new > old
 
         latest_product_in_db = get_all(session, Product)[-1]
         stockpoint_names_in_db = [stockpoint.name for stockpoint in latest_product_in_db.stock_points]
