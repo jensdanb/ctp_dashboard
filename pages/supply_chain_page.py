@@ -12,9 +12,9 @@ def layout(q: Q):
             breakpoint='xs',
             zones=[
                 ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
-                ui.zone('db_control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
-                    ui.zone('db_control_zone_a', size='50%'),
-                    ui.zone('db_control_zone_b', size='50%'),
+                ui.zone('sc_control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
+                    ui.zone('sc_control_zone_a', size='50%'),
+                    ui.zone('sc_control_zone_b', size='50%'),
                 ]),
                 ui.zone('graph_zone'),
                 ui.zone('table_zone'),
@@ -25,9 +25,9 @@ def layout(q: Q):
             breakpoint='m',
             zones=[
                 ui.zone('header_zone'),
-                ui.zone('db_control_zone', direction=ui.ZoneDirection.ROW, zones=[
-                    ui.zone('db_control_zone_a', size='50%'),
-                    ui.zone('db_control_zone_b', size='50%'),
+                ui.zone('sc_control_zone', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('sc_control_zone_a', size='50%'),
+                    ui.zone('sc_control_zone_b', size='50%'),
                 ]),
                 ui.zone('graph_zone'),
                 ui.zone('table_zone'),
@@ -45,7 +45,7 @@ async def serve_supply_chain_page(q: Q):
         show_sc_overview(q)
     elif q.args.show_supply_routes:
         with dbm.Session(q.user.db_engine) as session:
-            await show_table(q, session, getattr(dbm, q.args.show_supply_routes))
+            await show_table(q, session, dbm.SupplyRoute)
     elif q.args.show_move_requests:
         with dbm.Session(q.user.db_engine) as session:
             await show_table(q, session, dbm.MoveRequest)
@@ -57,14 +57,14 @@ async def serve_supply_chain_page(q: Q):
             show_graph(q, session)
     else:
         show_sc_overview(q)
-        show_db_controls(q)
+        show_sc_controls(q)
 
 
 def show_sc_overview(q: Q):
     with dbm.Session(q.user.db_engine) as session:
         product_selector = product_dropdown(q, session, trigger=True)
     q.page['sc_overview'] = ui.form_card(
-        box='db_control_zone_a',
+        box='sc_control_zone_a',
         items=[
             ui.text_xl("Supply Chain Overview"),
             product_selector,
@@ -74,9 +74,9 @@ def show_sc_overview(q: Q):
     )
 
 
-def show_db_controls(q: Q):
-    q.page['db_controls'] = ui.form_card(
-        box='db_control_zone_b',
+def show_sc_controls(q: Q):
+    q.page['sc_controls'] = ui.form_card(
+        box='sc_control_zone_b',
         items=[
             ui.text_xl("Database Controls"),
             ui.button(name='reset_db', label='Reset Database'),
@@ -98,7 +98,6 @@ def show_graph(q: Q, session):
             ui.frame(content=html_content, height=f'{str(graph_pixels)}px', width=f'{str(graph_pixels)}px')
         ]
     )
-
 
 
 async def show_table(q: Q, session, db_table: dbm.Base):
