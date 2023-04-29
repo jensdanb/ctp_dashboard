@@ -33,14 +33,42 @@ def product_dropdown(q: Q, session, trigger=False):
 
 
 def stockpoint_choice_group(q: Q, session, trigger=False):
-    product = get_selected(q, session, dbm.Product)
-    valid_stockpoints = product.stock_points
-    stockpoint_choices = [
-        ui.choice(name=str(stockpoint.id), label=stockpoint.name)
-        for stockpoint in valid_stockpoints
-    ]
+    stockpoint_choices = assemble_choices(q, session, dbm.Product, 'stock_points')
     return ui.choice_group(name='stockpoint_selection',
                            label='Select Stockpoint',
-                            value=q.client.stockpoint_selection,
+                           value=q.client.stockpoint_selection,
                            choices=stockpoint_choices,
                            trigger=trigger)
+
+
+def supply_route_choice_group(q: Q, session, trigger=False):
+    supply_routes_choices = assemble_choices(q, session, dbm.Product, 'supply_routes')
+    return ui.choice_group(name='supply_route_selection',
+                           label='Select Route',
+                           value=q.client.stockpoint_selection,
+                           choices=supply_routes_choices,
+                           trigger=trigger)
+
+
+def assemble_choices(q: Q, session, owner_category: dbm.Base, target_attr_in_owner):
+    match (owner_category, target_attr_in_owner):
+        case (dbm.Product, 'stock_points'):
+            owner = get_selected(q, session, owner_category)
+            items = getattr(owner, target_attr_in_owner)
+            choices = [
+                ui.choice(name=str(item.id), label=item.name)
+                for item in items
+            ]
+            return choices
+
+        case (dbm.Product, 'supply_routes') | (dbm.SupplyRoute, 'move_requests') | (dbm.MoveRequest, 'move_orders'):
+            owner = get_selected(q, session, owner_category)
+            items = getattr(owner, target_attr_in_owner)
+            choices = [
+                ui.choice(name=str(item.id), label=item.id)
+                for item in items
+            ]
+            return choices
+
+        case _:
+            raise ValueError(f'{owner_category} and {target_attr_in_owner} is not a valid combination.')
