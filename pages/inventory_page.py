@@ -24,9 +24,9 @@ def layout(q: Q):
             breakpoint='xs',
             zones=[
                 ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
-                ui.zone('control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
-                    ui.zone('control_zone_a', size='42%'),
-                    ui.zone('control_zone_b', size='58%'),
+                ui.zone('inv_control_zone', direction=ui.ZoneDirection.COLUMN, zones=[
+                    ui.zone('inv_control_zone_a', size='42%'),
+                    ui.zone('inv_control_zone_b', size='58%'),
                 ]),
                 ui.zone('plot_zone'),
             ]
@@ -35,9 +35,9 @@ def layout(q: Q):
             breakpoint='m',
             zones=[
                 ui.zone('header_zone'),
-                ui.zone('control_zone', direction=ui.ZoneDirection.ROW, zones=[
-                    ui.zone('control_zone_a', size='33%'),
-                    ui.zone('control_zone_b', size='66%'),
+                ui.zone('inv_control_zone', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('inv_control_zone_a', size='33%'),
+                    ui.zone('inv_control_zone_b', size='66%'),
                 ]),
                 ui.zone('plot_zone'),
             ]
@@ -46,9 +46,6 @@ def layout(q: Q):
 
 
 async def serve_inventory_page(q: Q):
-    """ Data updates on user action """
-
-    """ UI response on user action """
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
             projection = project_plot_stockpoint_selection(q, plot_session)
@@ -63,7 +60,7 @@ async def serve_inventory_page(q: Q):
         await show_sp_move_orders(q)
 
     else:
-        show_plot_stockpoint_chooser(q, 'control_zone_a', trigger1=True)
+        show_plot_stockpoint_chooser(q, 'inv_control_zone_a', trigger1=True)
         show_plot_controls(q)
 
 
@@ -88,7 +85,7 @@ def show_plot_stockpoint_chooser(q: Q, box, trigger1=False, trigger2=False):
 
 def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
-        box='control_zone_b',
+        box='inv_control_zone_b',
         items=[
             ui.text_xl("Make Plot"),
             ui.buttons([
