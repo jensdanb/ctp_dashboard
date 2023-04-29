@@ -45,7 +45,7 @@ def layout(q: Q):
     ])
 
 
-async def plot_page(q: Q):
+async def serve_inventory_page(q: Q):
     """ Data updates on user action """
 
     """ UI response on user action """

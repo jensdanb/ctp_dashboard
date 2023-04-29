@@ -37,7 +37,7 @@ def layout(q: Q):
     ])
 
 
-async def data_page(q: Q):
+async def serve_supply_chain_page(q: Q):
     if q.args.reset_db:
         with dbm.Session(q.user.db_engine) as fill_session:
             dbm.reset_and_fill_db(q.user.db_engine, fill_session, [ProductA, FakeProduct, BranchingProduct])

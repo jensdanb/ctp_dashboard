@@ -13,7 +13,7 @@ def layout(q: Q):
     ])
 
 
-async def home_page(q:Q):
+async def serve_order_page(q:Q):
     q.page['welcome'] = ui.form_card('message_zone', items=[
         ui.text_l(f'Welcome to the home page.'),
         ui.text(f"Please navigate to Data Page or Plotting Page by using the navigation header. ")

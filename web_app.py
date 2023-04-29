@@ -1,9 +1,9 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 
-from pages import homepage as homepage
-from pages import datapage as datapage
-from pages import plotpage as plotpage
+from pages import order_page as homepage
+from pages import supply_chain_page as datapage
+from pages import inventory_page as plotpage
 
 from h2o_wave import main, Q, app, ui, copy_expando
 
@@ -36,23 +36,33 @@ async def serve_ctp(q: Q):
     """ UI response on user action """
     page_hash = q.args['#']
 
-    if page_hash == 'data_page':
-        datapage.layout(q)
-        await datapage.data_page(q)
-    elif page_hash == 'plot_page':
-        plotpage.layout(q)
-        await plotpage.plot_page(q)
-    else:
+    if page_hash == 'order_page':
         homepage.layout(q)
-        await homepage.home_page(q)
+        await homepage.serve_order_page(q)
+    elif page_hash == 'inventory_page':
+        plotpage.layout(q)
+        await plotpage.serve_inventory_page(q)
+    else:  # -> page_hash == None or 'sc_page'
+        datapage.layout(q)
+        await datapage.serve_supply_chain_page(q)
+
 
     show_header(q)
     await q.page.save()
 
 
 def show_header(q: Q):
-    q.page['header'] = ui.header_card(box='header_zone', title='Inventory Projections', subtitle='', items=[
-        ui.button(name='#home_page', label='Home', link=True),
-        ui.button(name='#data_page', label='Data', link=True),
-        ui.button(name='#plot_page', label='Plotting', link=True),
-        ])
+    page_hash = q.args['#']
+    hash_to_label = {
+        'sc_page': 'Supply Chain',
+        'order_page': 'Orders',
+        'inventory_page': 'Inventories'
+    }
+    pagination_items = [
+        ui.button(name=f'#{hash}',label=hash_to_label[hash], link=True )
+             for hash in hash_to_label
+    ]
+    q.page['header'] = ui.header_card(box='header_zone',
+                                      title=hash_to_label[page_hash],
+                                      subtitle='',
+                                      items=pagination_items)
