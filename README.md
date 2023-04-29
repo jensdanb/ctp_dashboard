@@ -10,7 +10,7 @@ This is an app for managing inventory in a supply chain and demonstrating the Ca
 
 
 When you open the app in your browser, a database containing two Products is generated for you, and each product has a number of Stockpoints (inventory locations) connected by SupplyRoutes, representing the supply chain. An example (Product A) has the stockpoints Unfinished Goods -> Finished Goods -> Customer Inventory connected by two SupplyRoutes Route 1 and Route 2. 
-![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/234340769-e4e72008-e183-4de3-9510-ccdd5b79fa79.png)
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/235258216-aad1b400-fd54-4656-aecc-5ba6a60a8b45.png)
 
 
 To move goods along a SupplyRoute, a MoveRequest for a certain quantity is first created, then confirmed with one or more MoveOrders to fulfill the requested quantity. Inventory is transferred when the MoveOrder is executed, and at the same time the completion status of the MoveRequest is updated. 
@@ -20,8 +20,8 @@ A user interface is made with the H2O Wave framework.
 Use the navigation header in the top right corner to move between pages. The Home page is empty for now. 
 On the Database page, you can show the supply chain for a product in both table and graph form. The latter is auto-generated with networkx and pyvis, and passed as raw html to a UI card in the WebApp. You can also show other tables with MoveRequests and MoveOrders from the database, and regenerate a fresh database with the Reset Database button. Editing, adding and removing database content in a more controlled way will be supported here. 
 
-Database page UI status on 25 April 2023: 
-![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/234341586-769695ed-3f06-4ad5-a5ff-fd0cd92c9114.png)
+Database page UI status on 28 April 2023: 
+![Screenshot_20230329_222921](https://user-images.githubusercontent.com/56897399/235259774-03e17b53-7a5f-4237-a41c-8e865622d6b0.png)
 
 
 The Plotting page is for showing the projected inventory over time in any selected Stockpoint. The Python Pandas library is used to generate tables with daily inventory availability, projected from the pending incoming/outgoing (supply/demand) MoveOrders in the database affecting this stockpoint. In addition to projected inventory, ATP and CTP is also displayed, representing what amount of inventory can be used to respond to new MoveRequests under an ATP or CTP policy. 
