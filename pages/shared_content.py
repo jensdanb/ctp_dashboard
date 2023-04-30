@@ -47,7 +47,7 @@ def supply_route_choice_group(q: Q, session, trigger=False):
                            label='Select Route',
                            value=q.client.stockpoint_selection,
                            choices=supply_routes_choices,
-                           trigger=trigger)
+                           trigger=trigger, inline=True)
 
 
 def assemble_choices(q: Q, session, owner_category: dbm.Base, target_attr_in_owner):
@@ -65,7 +65,7 @@ def assemble_choices(q: Q, session, owner_category: dbm.Base, target_attr_in_own
             owner = get_selected(q, session, owner_category)
             items = getattr(owner, target_attr_in_owner)
             choices = [
-                ui.choice(name=str(item.id), label=item.id)
+                ui.choice(name=str(item.id), label=str(item.id))
                 for item in items
             ]
             return choices
