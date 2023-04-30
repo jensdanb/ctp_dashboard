@@ -55,12 +55,12 @@ def show_header(q: Q):
     hash_to_label = {
         'sc_page': 'Supply Chain',
         'order_page': 'Orders',
-        'inventory_page': 'Inventories'
+        'inventory_page': 'Inventories',
     }
     pagination_items = [ui.button(name=f'#{hash}',label=hash_to_label[hash], link=True)
                         for hash in hash_to_label]
     q.page['header'] = ui.header_card(box='header_zone',
-                                      title=hash_to_label[page_hash],
+                                      title=hash_to_label[page_hash] if page_hash else 'Supply Chain',
                                       subtitle='',
                                       items=pagination_items
                                       )
