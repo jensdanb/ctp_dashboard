@@ -1,7 +1,7 @@
 import datetime
 
 import databasing.database_model as dbm
-from pages.shared_content import show_table, product_dropdown, supply_route_choice_group
+from pages.shared_content import get_selected, show_table, product_dropdown, supply_route_choice_group
 from h2o_wave import site, Q, ui
 
 
@@ -63,13 +63,14 @@ def show_sc_controls(q: Q, session):
     )
 
 
-def make_request(q: Q):
+def make_request(q: Q, message=''):
     route_id = int(q.client.supply_route_selection)
     default_date = datetime.date.today()
     date_value = default_date.isoformat()
     q.page['sc_controls'] = ui.form_card(
         box='order_control_zone_a',
         items=[
+            ui.text_m(message),
             ui.text_l(f'Add Request to route {route_id}'),
             ui.date_picker(name='request_date_picker', label='Requested Delivery', value=date_value),
             ui.spinbox(name='request_quantity', label='Requested Quantity', min=0, max=10000, value=30, step=1),
@@ -77,6 +78,18 @@ def make_request(q: Q):
         ]
     )
 
+
+def submit_request(q, session):
+    picked_date_str = q.args.request_date_picker
+    day_picked = datetime.date.fromisoformat(picked_date_str)
+    quantity = int(q.args.request_quantity)
+    if day_picked < datetime.date.today():
+        make_request(q, message='Selected date is in the past. Must be today or later.')
+    else:
+        route = get_selected(q, session, dbm.SupplyRoute)
+        dbm.add_request(session, route, req_date=day_picked, quantity=quantity)
+        session.commit()
+        show_sc_controls(q, session)
 
 
 def show_welcome(q: Q):

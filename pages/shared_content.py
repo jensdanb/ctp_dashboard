@@ -10,7 +10,7 @@ def get_selected(q: Q, session, table):
         case dbm.StockPoint:
             return dbm.get_by_id(session, dbm.StockPoint, int(q.client.stockpoint_selection))
         case dbm.SupplyRoute:
-            raise NotImplementedError('No selection implemented for SupplyRoute!')
+            return dbm.get_by_id(session, dbm.SupplyRoute, int(q.client.supply_route_selection))
         case dbm.MoveRequest:
             raise NotImplementedError('No selection implemented for MoveRequest!')
         case dbm.MoveOrder:
