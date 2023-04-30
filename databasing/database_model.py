@@ -205,13 +205,13 @@ def add_request(session, route, delivery_time, quantity):
     request = MoveRequest(route=route, date_of_registration=reg_date, requested_delivery_date=req_date, quantity=quantity)
 
     session.add(request)
-    return request
 
 
-def fill_request(request):
+def fill_request(session, request):
     quantity = request.unanswered_quantity()
     order = MoveOrder(request=request, order_date=request.requested_delivery_date, quantity=quantity)
-    return order
+    session.add(order)
+
 
 
 def execute_move(session: Session, move: MoveOrder):

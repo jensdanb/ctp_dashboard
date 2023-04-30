@@ -205,7 +205,7 @@ class TestAddItems:
         for route_id in route_id_list:
             with Session(test_engine) as add_request_session:
                 route_from_db = get_by_id(add_request_session, SupplyRoute, route_id)
-                new_request = add_request(add_request_session, route_from_db, 4, 51)
+                add_request(add_request_session, route_from_db, 4, 51)
                 add_request_session.commit()
 
         with Session(test_engine) as session:
@@ -220,8 +220,10 @@ class TestAddItems:
                 # Add two MoveOrder that together fulfills the request
                 partial_order = MoveOrder(request=request, order_date=date.today() + timedelta(days=2), quantity=request.quantity // 2)
                 add_moves_session.add(partial_order)
-                fill_order = fill_request(request)
-                add_moves_session.add(fill_order)
+
+                fill_request(add_moves_session, request)
+                fill_order = get_all(add_moves_session, MoveOrder)[-1]
+
                 assert partial_order.quantity + fill_order.quantity == unanswered_quantity
 
             add_moves_session.commit()
