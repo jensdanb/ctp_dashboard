@@ -205,7 +205,7 @@ class TestAddItems:
         for route_id in route_id_list:
             with Session(test_engine) as add_request_session:
                 route_from_db = get_by_id(add_request_session, SupplyRoute, route_id)
-                add_request(add_request_session, route_from_db, 4, 51)
+                add_request(add_request_session, route_from_db, date.today() + timedelta(days=4), 51)
                 add_request_session.commit()
 
         with Session(test_engine) as session:
