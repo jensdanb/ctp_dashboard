@@ -56,17 +56,17 @@ async def serve_supply_chain_page(q: Q):
 def update_sc_cards(q: Q, session):
     show_graph(q, session)
     show_table(q, session, dbm.SupplyRoute, box='sc_control_zone_b')
-    show_sc_overview(q)
+    show_sc_controls(q)
 
 
-def show_sc_overview(q: Q):
+def show_sc_controls(q: Q):
     with dbm.Session(q.user.db_engine) as session:
         product_selector = product_dropdown(q, session, trigger=True)
-    q.page['sc_overview'] = ui.form_card(
+    q.page['sc_controls'] = ui.form_card(
         box='sc_control_zone_a',
         items=[
-            ui.text_l("Product Routes"),
-            ui.button(name='reset_db', label='Reset Database'),
+            ui.text_xl('Controls'),
+            ui.button(name='reset_db', label='New Randomized Database'),
             product_selector,
             ui.button(name='show_supply_routes', label='Table: Supply Routes', value='SupplyRoute'),
             ui.button(name='show_graph', label='Graph: Supply Routes'),
