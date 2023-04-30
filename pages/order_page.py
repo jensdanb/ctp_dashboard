@@ -1,3 +1,5 @@
+import datetime
+
 import databasing.database_model as dbm
 from pages.shared_content import show_table, product_dropdown, supply_route_choice_group
 from h2o_wave import site, Q, ui
@@ -38,6 +40,8 @@ async def serve_order_page(q:Q):
     elif q.args.show_move_orders:
         with dbm.Session(q.user.db_engine) as session:
             show_table(q, session, dbm.MoveOrder, box='order_table_zone')
+    elif q.args.make_request:
+        make_request(q)
     else:
         with dbm.Session(q.user.db_engine) as session:
             show_sc_controls(q, session)
@@ -52,10 +56,27 @@ def show_sc_controls(q: Q, session):
             ui.text_l("Database Controls"),
             product_selector,
             route_selector,
+            ui.button(name='make_request', label='Make Request'),
             ui.button(name='show_move_requests', label='Table: Move Requests'),
             ui.button(name='show_move_orders', label='Table: Move Orders')
         ]
     )
+
+
+def make_request(q: Q):
+    route_id = int(q.client.supply_route_selection)
+    default_date = datetime.date.today()
+    date_value = default_date.isoformat()
+    q.page['sc_controls'] = ui.form_card(
+        box='order_control_zone_a',
+        items=[
+            ui.text_l(f'Add Request to route {route_id}'),
+            ui.date_picker(name='request_date_picker', label='Requested Delivery', value=date_value),
+            ui.spinbox(name='request_quantity', label='Requested Quantity', min=0, max=10000, value=30, step=1),
+            ui.button(name='submit_request', label='Submit Request')
+        ]
+    )
+
 
 
 def show_welcome(q: Q):
