@@ -1,3 +1,5 @@
+import databasing.database_model as dbm
+from pages.shared_content import show_table, product_dropdown, supply_route_choice_group
 from h2o_wave import site, Q, ui
 
 
@@ -30,17 +32,26 @@ def layout(q: Q):
 
 
 async def serve_order_page(q:Q):
+    if q.args.show_move_requests:
+        with dbm.Session(q.user.db_engine) as session:
+            show_table(q, session, dbm.MoveRequest, box='order_table_zone')
+    elif q.args.show_move_orders:
+        with dbm.Session(q.user.db_engine) as session:
+            show_table(q, session, dbm.MoveOrder, box='order_table_zone')
+    else:
+        with dbm.Session(q.user.db_engine) as session:
+            show_sc_controls(q, session)
 
-    show_sc_controls(q)
-    show_welcome(q)
 
-
-def show_sc_controls(q: Q):
+def show_sc_controls(q: Q, session):
+    product_selector = product_dropdown(q, session, trigger=True)
+    route_selector = supply_route_choice_group(q, session, trigger=False)
     q.page['sc_controls'] = ui.form_card(
         box='order_control_zone_a',
         items=[
             ui.text_l("Database Controls"),
-
+            product_selector,
+            route_selector,
             ui.button(name='show_move_requests', label='Table: Move Requests'),
             ui.button(name='show_move_orders', label='Table: Move Orders')
         ]
