@@ -27,6 +27,7 @@ async def serve_ctp(q: Q):
         # UI initialization
         q.client.product_selection = '1'
         q.client.stockpoint_selection = '1'  # Warning! Do not set to id number that could be outside initially selected product!
+        q.client.supply_route_selection = '1'
         q.client.plot_length = 12
         q.client.plot_columns = plotpage.plotable_columns
 
