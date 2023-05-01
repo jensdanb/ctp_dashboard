@@ -42,18 +42,22 @@ async def serve_order_page(q:Q):
             show_table(q, session, dbm.MoveOrder, box='order_table_zone')
     elif q.args.make_request:
         make_request(q)
+    elif q.args.submit_request:
+        with dbm.Session(q.user.db_engine) as session:
+            submit_request(q, session)
+            show_order_controls(q, session)
     else:
         with dbm.Session(q.user.db_engine) as session:
-            show_sc_controls(q, session)
+            show_order_controls(q, session)
 
 
-def show_sc_controls(q: Q, session):
+def show_order_controls(q: Q, session, message=''):
     product_selector = product_dropdown(q, session, trigger=True)
     route_selector = supply_route_choice_group(q, session, trigger=False)
     q.page['sc_controls'] = ui.form_card(
         box='order_control_zone_a',
         items=[
-            ui.text_l("Database Controls"),
+            ui.text_l(message),
             product_selector,
             route_selector,
             ui.button(name='make_request', label='Make Request'),
@@ -80,16 +84,15 @@ def make_request(q: Q, message=''):
 
 
 def submit_request(q, session):
-    picked_date_str = q.args.request_date_picker
+    picked_date_str = q.client.request_date_picker
     day_picked = datetime.date.fromisoformat(picked_date_str)
-    quantity = int(q.args.request_quantity)
-    if day_picked < datetime.date.today():
-        make_request(q, message='Selected date is in the past. Must be today or later.')
-    else:
+    quantity = int(q.client.request_quantity)
+    if day_picked >= datetime.date.today() and quantity in range(-1000, 10000):
         route = get_selected(q, session, dbm.SupplyRoute)
         dbm.add_request(session, route, req_date=day_picked, quantity=quantity)
         session.commit()
-        show_sc_controls(q, session)
+    else:
+        pass
 
 
 def show_welcome(q: Q):
