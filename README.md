@@ -1,6 +1,6 @@
 # Capable-To-Promise Inventory Model
 
-## Update! The app is now live at http://194.195.241.8:10101
+## Update! The app is now live at [http://139.144.176.168:10101](http://139.144.176.168:10101/)
 It is incomplete and the server is barebones, but you can now try it out without installing anything. If you want to install and run it locally on your machine, instructions are at the bottom of this page. 
 
 
