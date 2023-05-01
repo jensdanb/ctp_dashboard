@@ -1,7 +1,7 @@
 # Capable-To-Promise Inventory Model
 
 ## Update! The app is now live at [http://139.144.176.168:10101](http://139.144.176.168:10101/)
-It is incomplete and the server is barebones, but you can now try it out without installing anything. If you want to install and run it locally on your machine, instructions are at the bottom of this page. 
+It is incomplete and the server is barebones, but you can now try it out without installing anything. If you rather want to install and run the app on your local machine, instructions are at the bottom of this page. 
 
 
 ## What is this? 
@@ -44,7 +44,7 @@ Plotting page UI status on 03 April 2023:
 
 ## Instructions for running this on your own machine
 
-If you want to run the app on your own machine, do the following steps. If you are unfamiliar with any of the steps, search for a recent guide online: None of them are very hard, and the guide will explain them better than I could do here. These instructions are for Linux machines. Details of each step is slightly different for MacOS and more different for Windows, but the general procedure should be roughly the same. 
+If you want to run the app on your own machine, follow these steps. If you are unfamiliar with any of the steps, search for a recent guide online: None of them are very hard, and the guide will explain them better than I could do here. These instructions are for Linux machines, and most of the steps are done with the command line. Details of each step is slightly different for MacOS and more different for Windows, but the general procedure should be roughly the same. 
 
 1: Install Python3.10 on your computer
 
@@ -59,4 +59,6 @@ If you want to run the app on your own machine, do the following steps. If you a
 
 
 5: Run the app with wave by executing the following command: wave run web_app
+
+6: The server should now running be running in your terminal. Go to http://localhost:10101/ in your webbroswer to interact with it. Press Ctrl+c in your terminal window to stop the server. 
 
