@@ -40,7 +40,7 @@ def test_html_result():
             html_string = net_to_html_str(net)
 
             assert isinstance(html_string, str)
-            assert html_string[:6] == '<html>' and html_string[-6:] == '</html>'
+            assert html_string[:6] == '<html>' and html_string[-7:] == '</html>'
 
             # product_to_html_str() does all the above in one function
             assert product_to_html_str(test_session, product) == html_string

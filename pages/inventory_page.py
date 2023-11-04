@@ -69,7 +69,7 @@ def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP
     return projection_class(session, stockpoint, plot_period=q.client.plot_length)
 
 
-def show_plot_stockpoint_chooser(q: Q, box, trigger1=False, trigger2=False):
+def show_plot_stockpoint_chooser(q: Q, box, trigger1=True, trigger2=False):
     with dbm.Session(q.user.db_engine) as session:
         product_chooser = product_dropdown(q, session, trigger=trigger1)
         stockpoint_chooser = stockpoint_choice_group(q, session, trigger=trigger2)

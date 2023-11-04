@@ -30,14 +30,12 @@ def graph_to_net(graph: nx.DiGraph):
     return net
 
 
+# Should be redundant with the string already existing as net.html, but isn't...
 def net_to_html_str(net: Network):
     filename = 'net.html'
     net.write_html(filename)
-    text = """"""
-    for line in open(filename):
-        text += line
     remove(filename)
-    return text
+    return net.html
 
 
 def product_to_html_str(session, product):

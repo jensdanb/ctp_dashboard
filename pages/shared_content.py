@@ -74,17 +74,57 @@ def assemble_choices(q: Q, session, owner_category: dbm.Base, target_attr_in_own
             raise ValueError(f'{owner_category} and {target_attr_in_owner} is not a valid combination.')
 
 
+def table_of_all(q: Q, session, db_table: dbm.Base, conversion_dict):
+
+    all_items = dbm.get_all(session, db_table)
+    items = build_stat_table(all_items, conversion_dict)
+    items = format_stat_table(items, db_table)
+
+    return items
+
+
+def table_of_children(q: Q, session, db_table: dbm.Base, conversion_dict, parent):
+    all_items = dbm.get_all(session, db_table)
+
+    match db_table:
+        case dbm.MoveOrder:
+            children = list(filter(lambda order: order.request.route == parent, all_items))
+        case dbm.MoveRequest:
+            children = list(filter(lambda request: request.route == parent, all_items))
+        case dbm.SupplyRoute:
+            children = list(filter(lambda route: route.product == parent, all_items))
+        case dbm.StockPoint:
+            children = list(filter(lambda stockpoint: stockpoint.product == parent, all_items))
+        case _:
+            children = []
+
+    items = build_stat_table(children, conversion_dict)
+    items = format_stat_table(items, db_table)
+
+    return items
+
+
 def show_table(q: Q, session, db_table: dbm.Base, box):
     title = db_table.__name__
-    all_items = dbm.get_all(session, db_table)
+
+    conversion_dict = table_conversion_dicts[db_table]
+    columns = [title] + list(conversion_dict.keys())
+
+    items = table_of_all(q, session, db_table, conversion_dict)
+
+    q.page['db_table'] = ui.stat_table_card(box=box, title=title+'s', columns=columns, items=items)
+
+
+def show_children(q: Q, session, db_table: dbm.Base, box, parent):
+    title = db_table.__name__
 
     conversion_dict  = table_conversion_dicts[db_table]
     columns = [title] + list(conversion_dict.keys())
-    items = build_stat_table(all_items, conversion_dict)
 
-    items = format_stat_table(items, db_table)
+    items = table_of_children(q, session, db_table, conversion_dict, parent)
 
     q.page['db_table'] = ui.stat_table_card(box=box, title=title+'s', columns=columns, items=items)
+
 
 
 def build_stat_table(items, conversion_dict):

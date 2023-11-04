@@ -1,7 +1,7 @@
 import datetime
 
 import databasing.database_model as dbm
-from pages.shared_content import get_selected, show_table, product_dropdown, supply_route_choice_group
+from pages.shared_content import get_selected, show_table, show_children, product_dropdown, supply_route_choice_group
 from h2o_wave import site, Q, ui
 
 
@@ -36,10 +36,10 @@ def layout(q: Q):
 async def serve_order_page(q:Q):
     if q.args.show_move_requests:
         with dbm.Session(q.user.db_engine) as session:
-            show_table(q, session, dbm.MoveRequest, box='order_table_zone')
+            show_children(q, session, dbm.MoveRequest, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
     elif q.args.show_move_orders:
         with dbm.Session(q.user.db_engine) as session:
-            show_table(q, session, dbm.MoveOrder, box='order_table_zone')
+            show_children(q, session, dbm.MoveOrder, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
     elif q.args.make_request:
         make_request(q)
     elif q.args.submit_request:
