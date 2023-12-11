@@ -10,7 +10,7 @@ class ProductA():
     def __init__(self):
         self.product = Product(
             name="Product A",
-            price=250,
+            price=85_00,
         )
         self.stock_points=[
                StockPoint(product=self.product, name="Unfinished goods", current_stock=630),
