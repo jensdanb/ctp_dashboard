@@ -19,6 +19,19 @@ def get_selected(q: Q, session, table):
             raise ValueError(f'Table argument {table} is not in {dbm.expected_orms_in_db}')
 
 
+class DbContent:
+    def __init__(self, q: Q, session: dbm.Session, to_fetch=None):
+
+        self.product: dbm.Product = get_selected(q, session, dbm.Product)
+        self.stockpoint: dbm.StockPoint = get_selected(q, session, dbm.StockPoint)
+        self.supply_route: dbm.SupplyRoute = get_selected(q, session, dbm.SupplyRoute)
+
+        self.current_stock: int = self.stockpoint.current_stock
+        self.price: int = self.product.price
+
+
+
+
 def product_dropdown(q: Q, session, trigger=False):
     products = dbm.get_all(session, dbm.Product)
     product_choices = [
@@ -32,10 +45,11 @@ def product_dropdown(q: Q, session, trigger=False):
                        trigger=trigger)
 
 
-def stockpoint_choice_group(q: Q, session, trigger=False):
+def stockpoint_choice_group(q: Q, session, inline=False, trigger=False):
     stockpoint_choices = assemble_choices(q, session, dbm.Product, 'stock_points')
     return ui.choice_group(name='stockpoint_selection',
                            label='Select Stockpoint',
+                           inline=inline,
                            value=q.client.stockpoint_selection,
                            choices=stockpoint_choices,
                            trigger=trigger)
