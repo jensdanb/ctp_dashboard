@@ -30,8 +30,6 @@ class DbContent:
         self.price: int = self.product.price
 
 
-
-
 def product_dropdown(q: Q, session, trigger=False):
     products = dbm.get_all(session, dbm.Product)
     product_choices = [

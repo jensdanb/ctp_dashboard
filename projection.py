@@ -109,12 +109,13 @@ class ProjectionCTP(StockProjection):
     def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
         super().__init__(session, stockpoint, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
-        incoming_routes = get_incoming_routes(session, stockpoint)
 
+        incoming_routes = get_incoming_routes(session, stockpoint)
         if not incoming_routes:
             self.df['CTP'] = self.df["ATP"]
         else:
             self.project_ctp(incoming_routes)
+
         self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, routes: list[SupplyRoute]):
