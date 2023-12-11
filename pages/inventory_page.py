@@ -51,20 +51,21 @@ def layout(q: Q):
 
 async def serve_inventory_page(q: Q):
 
-    with dbm.Session(q.user.db_engine) as fetching_session:
-        db_content = DbContent(q, fetching_session)
-
     if q.args.matplotlib_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = project_plot_stockpoint_selection(q, plot_session)
+            stockpoint = get_selected(q, plot_session, dbm.StockPoint)
+            projection = ProjectionCTP(plot_session, stockpoint, q.client.plot_length)
         await mpl_plot(q, projection.plot)
 
     elif q.args.native_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
-            projection = project_plot_stockpoint_selection(q, plot_session)
+            stockpoint = get_selected(q, plot_session, dbm.StockPoint)
+            projection = ProjectionCTP(plot_session, stockpoint, q.client.plot_length)
         native_plot(q, projection, plot_period=q.client.plot_length)
 
     else:
+        with dbm.Session(q.user.db_engine) as fetching_session:
+            db_content = DbContent(q, fetching_session)
         show_plot_stockpoint_chooser(q, 'inv_sp_selection_zone', trigger1=True)
         await show_inventory_status(q, db_content, box='inv_status_zone_a')
         await show_sp_move_orders(q, box='inv_status_zone_b')
@@ -76,6 +77,7 @@ def fetch_inventory_data(q: Q):
         return
 
 
+# Deprecated
 def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
     stockpoint = get_selected(q, session, dbm.StockPoint)
     return projection_class(session, stockpoint, plot_period=q.client.plot_length)
