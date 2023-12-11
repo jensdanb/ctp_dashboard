@@ -26,7 +26,7 @@ async def serve_ctp(q: Q):
 
         # UI initialization
         q.client.product_selection = '1'
-        q.client.stockpoint_selection = '1'  # Warning! Do not set to id number that could be outside initially selected product!
+        q.client.stockpoint_selection = '2'  # Warning! Do not set to id number that could be outside initially selected product!
         q.client.supply_route_selection = '1'
         q.client.plot_length = 12
         q.client.plot_columns = plotpage.plotable_columns
@@ -45,10 +45,9 @@ async def serve_ctp(q: Q):
         orderpage.layout(q)
         await orderpage.serve_order_page(q)
 
-    elif page_hash == 'order_page' or page_hash is None:  #
+    elif page_hash == 'inventory_page' or page_hash is None:  #
         plotpage.layout(q)
         await plotpage.serve_inventory_page(q)
-
 
     show_header(q)
     await q.page.save()
