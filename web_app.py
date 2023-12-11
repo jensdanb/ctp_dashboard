@@ -1,7 +1,7 @@
 from databasing import database_model as dbm
 from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 
-from pages import order_page as homepage
+from pages import order_page as orderpage
 from pages import supply_chain_page as datapage
 from pages import inventory_page as plotpage
 
@@ -37,15 +37,18 @@ async def serve_ctp(q: Q):
     """ UI response on user action """
     page_hash = q.args['#']
 
-    if page_hash == 'order_page':
-        homepage.layout(q)
-        await homepage.serve_order_page(q)
-    elif page_hash == 'inventory_page':
-        plotpage.layout(q)
-        await plotpage.serve_inventory_page(q)
-    else:  # -> page_hash == None or 'sc_page'
+    if page_hash == 'sc_page':
         datapage.layout(q)
         await datapage.serve_supply_chain_page(q)
+
+    elif page_hash == 'order_page':  # ->
+        orderpage.layout(q)
+        await orderpage.serve_order_page(q)
+
+    elif page_hash == 'order_page' or page_hash is None:  #
+        plotpage.layout(q)
+        await plotpage.serve_inventory_page(q)
+
 
     show_header(q)
     await q.page.save()
@@ -61,7 +64,7 @@ def show_header(q: Q):
     pagination_items = [ui.button(name=f'#{hash}',label=hash_to_label[hash], link=True)
                         for hash in hash_to_label]
     q.page['header'] = ui.header_card(box='header_zone',
-                                      title=hash_to_label[page_hash] if page_hash else 'Supply Chain',
+                                      title=hash_to_label[page_hash] if page_hash else 'Inventories',
                                       subtitle='',
                                       items=pagination_items
                                       )
