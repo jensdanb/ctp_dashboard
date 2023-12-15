@@ -33,7 +33,6 @@ class StockProjection:
         # Main projection dataframe
         self.df = self.project_inventory(planned_receipts, planned_sends)
 
-
     def __repr__(self):
         return f"Inventory projection for stockpoint {self.stockpoint_id} ({self.stockpoint_name + ' for selected product'}), from {self.start_date}."
 
@@ -92,14 +91,12 @@ class ProjectionATP(StockProjection):
         return plt
 
 
-def route_capacity(route, n_days, index):
-    column = pd.Series(data=[route.capacity] * n_days, index=index)
-    column[:route.lead_time] = [0] * route.lead_time
-    return np.cumsum(column)
+def capability_to_series(route, index):
+    return pd.Series(data=[route.capability(day) for day in range(len(index))], index=index)
 
 
 def potential_capacity(routes: list[SupplyRoute], index) -> pd.Series:
-    columns = {str(route.id): route_capacity(route, len(index), index) for route in routes}
+    columns = {str(route.id): capability_to_series(route, index) for route in routes}
     frame = pd.DataFrame(data=columns)
     frame['total_capacity'] = frame.sum(axis=1)
     return frame['total_capacity']
@@ -119,24 +116,22 @@ class ProjectionCTP(StockProjection):
         self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, routes: list[SupplyRoute]):
-        if not all([route.receiver.name == self.stockpoint_name for route in routes]) :
-            raise NotImplementedError('Can only project ctp from incoming route.')
-        else:
-            self.df['cum_supply'] = np.cumsum(self.df['supply'])
-            self.df['cum_capacity'] = potential_capacity(routes, self.dates_range)
+        self.df['cum_supply'] = np.cumsum(self.df['supply'])
+        self.df['cum_capacity'] = potential_capacity(routes, self.dates_range)
 
-            self.df['unused_capacity'] = self.df[['cum_supply', 'cum_capacity']].max(axis=1) - self.df['cum_supply']
-            # Purge premature "unused capacity" which is in fact committed to a later delivery.
-            i = 0
-            for unused_capacity in self.df['unused_capacity'][::-1]:
-                if unused_capacity <= 0:
-                    self.df['unused_capacity'].iloc[:self.duration - i] = 0
-                    break
-                i += 1
+        self.df['Unused capacity'] = np.subtract(self.df['cum_capacity'], self.df['cum_supply'])
+        # Purge premature "unused capacity" which is in fact committed to a later delivery.
+        i = 0
+        for unused_capacity in self.df['Unused capacity'][::-1]:
+            if unused_capacity <= 0:
+                self.df['Unused capacity'].iloc[:self.duration - i + 1] = 0
+                break
+            i += 1
 
-            self.df["potential_inventory"] = self.df['inventory'] + self.df['unused_capacity']
-            self.df["CTP"] = minimum_future(self.df["potential_inventory"])
-            self.df.drop(columns=['cum_supply', 'cum_capacity', 'unused_capacity', 'potential_inventory'], inplace=True)
+        self.df["potential_inventory"] = np.add(self.df['inventory'], self.df['Unused capacity'])
+
+        self.df["CTP"] = minimum_future(self.df["potential_inventory"])
+        self.df.drop(columns=['cum_supply', 'cum_capacity', 'potential_inventory'], inplace=True)
 
     def make_plot(self, duration: int):
 
