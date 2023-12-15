@@ -8,12 +8,13 @@ import pandas as pd
 from h2o_wave import Q, ui, data
 
 
-plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'CTP']
+plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'Unused capacity', 'CTP']
 column_plot_styles = {
     'demand': {'color': 'red', 'type': 'interval'},
     'supply': {'color': 'blue', 'type': 'interval'},
     'inventory': {'color': 'teal', 'type': 'area'},
     'ATP': {'color': 'green', 'type': 'area'},
+    'Unused capacity': {'color': 'red', 'type': 'line'},
     'CTP': {'color': 'orange', 'type': 'area'}
 }
 
@@ -25,9 +26,10 @@ def layout(q: Q):
             zones=[
                 ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
                 ui.zone('inv_sp_selection_zone'),
-                ui.zone('inv_status_zone', direction=ui.ZoneDirection.COLUMN, zones=[
-                    ui.zone('inv_status_zone_a', size='42%'),
-                    ui.zone('inv_status_zone_b', size='58%'),
+                ui.zone('inv_status_zone', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('inv_status_zone_a', size='33%'),
+                    ui.zone('inv_status_zone_b', size='34%'),
+                    ui.zone('inv_status_zone_c', size='33%'),
                 ]),
                 ui.zone('inv_control_zone'),
                 ui.zone('plot_zone'),
@@ -40,7 +42,8 @@ def layout(q: Q):
                 ui.zone('inv_sp_selection_zone'),
                 ui.zone('inv_status_zone', direction=ui.ZoneDirection.ROW, zones=[
                     ui.zone('inv_status_zone_a', size='33%'),
-                    ui.zone('inv_status_zone_b', size='66%'),
+                    ui.zone('inv_status_zone_b', size='34%'),
+                    ui.zone('inv_status_zone_c', size='33%'),
                 ]),
                 ui.zone('inv_control_zone'),
                 ui.zone('plot_zone'),
@@ -66,10 +69,11 @@ async def serve_inventory_page(q: Q):
     else:
         with dbm.Session(q.user.db_engine) as fetching_session:
             db_content = DbContent(q, fetching_session)
-        show_plot_stockpoint_chooser(q, 'inv_sp_selection_zone', trigger1=True)
-        await show_inventory_status(q, db_content, box='inv_status_zone_a')
-        await show_sp_move_orders(q, box='inv_status_zone_b')
-        show_plot_controls(q)
+
+            show_stockpoint_selection(q, 'inv_sp_selection_zone', trigger1=True)
+            await show_inventory_status(q, db_content, boxes=['inv_status_zone_a', 'inv_status_zone_b'])
+            await show_sp_move_orders(q, box='inv_status_zone_c')
+            show_plot_controls(q)
 
 
 def fetch_inventory_data(q: Q):
@@ -77,36 +81,41 @@ def fetch_inventory_data(q: Q):
         return
 
 
-# Deprecated
-def project_plot_stockpoint_selection(q, session, projection_class=ProjectionCTP):
-    stockpoint = get_selected(q, session, dbm.StockPoint)
-    return projection_class(session, stockpoint, plot_period=q.client.plot_length)
-
-
-def show_plot_stockpoint_chooser(q: Q, box, trigger1=True, trigger2=True):
+def show_stockpoint_selection(q: Q, box, trigger1=True, trigger2=True):
     with dbm.Session(q.user.db_engine) as session:
         product_chooser = product_dropdown(q, session, trigger=trigger1)
         stockpoint_chooser = stockpoint_choice_group(q, session, inline=True, trigger=trigger2)
 
-    q.page['stockpoint_chooser'] = ui.form_card(
+    q.page['stockpoint_selection'] = ui.form_card(
         box=box,
         items=[
+            ui.text_l(content="Stockpoint Selection"),
             ui.inline(items=[
-            product_chooser,
-            stockpoint_chooser
+                product_chooser,
+                stockpoint_chooser
             ])
         ]
     )
 
 
-async def show_inventory_status(q: Q, db_content, box):
+async def show_inventory_status(q: Q, db_content, boxes):
 
     in_stock = db_content.current_stock
     value_per_item = db_content.price / 100
     stock_value = in_stock * value_per_item
 
+    outgoing = [f'{route}\n' for route in db_content.outgoing_routes]
+
+    q.page['inv_about'] = ui.tall_stats_card(
+        box=boxes[0],
+        items=[
+            ui.stat(label='Product', value=f'{db_content.product.name}'),
+            ui.stat(label='Stockpoint', value=f'{db_content.stockpoint.name}'),
+        ]
+    )
+
     q.page['inv_status'] = ui.tall_stats_card(
-        box=box,
+        box=boxes[-1],
         items=[
             ui.stat(label='Current Stock', value=f'{in_stock:,}'),
             ui.stat(label='Unit value, $', value=f'{value_per_item:,.2f},-'),
@@ -158,14 +167,14 @@ def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
         box='inv_control_zone',
         items=[
-            ui.text_xl("Make Plot"),
+            ui.text_xl("Inventory Projections"),
             ui.buttons([
                 ui.button(name='matplotlib_plot_button', label='Plot with Matplotlib'),
                 ui.button(name='native_plot_button', label='Plot with WebApp Plot')
             ]),
 
             ui.slider(name='plot_length', label='Number of days in plot', min=10, max=50, step=1, value=q.client.plot_length),
-            ui.checklist(name='plot_columns', label='Data columns in plot', inline=True,
+            ui.checklist(name='plot_columns', label='Data columns in plot', values=plotable_columns, inline=True,
                          choices=[ui.choice(name=col_name, label=col_name) for col_name in plotable_columns])
         ]
     )
