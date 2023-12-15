@@ -28,7 +28,7 @@ class Product(Base):
     price: Mapped[Optional[int]]  # In euro-cents. 100 = 1 EUR, display as 1.00 to user.
 
     def __repr__(self):
-        return f"Product {self.name}."
+        return self.name
 
 
 class StockPoint(Base):
@@ -46,7 +46,7 @@ class StockPoint(Base):
     current_stock: Mapped[int] = mapped_column(CheckConstraint("current_stock >= 0"))
 
     def __repr__(self):
-        return f"Stock point {self.name}, holding {self.current_stock} of item {self.product.name}."
+        return f"{self.product.name}, {self.name}"
 
 
 # For one-to-one BOM architecture
@@ -79,11 +79,11 @@ class SupplyRoute(Base):
         if day < self.lead_time:
             capability = 0
         else:
-            capability = self.capacity * (day + 1 - self.lead_time)
+            capability = self.capacity * (day - self.lead_time + 1)
         return capability
 
     def __repr__(self):
-        return f"Supply route from {self.sender.name} to {self.receiver.name}. "
+        return f"Route {self.id}, {self.sender.name} -> {self.receiver.name}. "
 
 
 class MoveRequest(Base):
