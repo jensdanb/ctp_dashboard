@@ -29,6 +29,9 @@ class DbContent:
         self.current_stock: int = self.stockpoint.current_stock
         self.price: int = self.product.price
 
+        self.incoming_routes: [dbm.SupplyRoute] = dbm.get_incoming_routes(session, self.stockpoint)
+        self.outgoing_routes: [dbm.SupplyRoute] = dbm.get_outgoing_routes(session, self.stockpoint)
+
 
 def product_dropdown(q: Q, session, trigger=False):
     products = dbm.get_all(session, dbm.Product)
