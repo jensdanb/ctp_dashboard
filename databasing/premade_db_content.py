@@ -21,7 +21,8 @@ class ProductA():
             product=self.product,
             sender=self.stock_points[0],
             receiver=self.stock_points[1],
-            capacity=20,
+            capacity=30,
+            lead_time=4,
             move_requests=[
                 MoveRequest(quantity=100,
                             date_of_registration=date.today(),
@@ -52,9 +53,9 @@ class ProductA():
                 MoveRequest(quantity=50, date_of_registration=date.today(),
                             requested_delivery_date=date.today() + timedelta(days=7),
                             move_orders=[MoveOrder(quantity=50, order_date=date.today() + timedelta(days=7))]),
-                MoveRequest(quantity=100, date_of_registration=date.today(),
+                MoveRequest(quantity=80, date_of_registration=date.today(),
                             requested_delivery_date=date.today() + timedelta(days=11, ),
-                            move_orders=[MoveOrder(quantity=100, order_date=date.today() + timedelta(days=11))])
+                            move_orders=[MoveOrder(quantity=80, order_date=date.today() + timedelta(days=11))])
             ],
         )
 
