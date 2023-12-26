@@ -110,6 +110,7 @@ class ProjectionCTP(StockProjection):
         incoming_routes = get_incoming_routes(session, stockpoint)
         if not incoming_routes:
             self.df['CTP'] = self.df["ATP"]
+            self.df['Uncommitted capacity'] = pd.Series([0 for day in range(self.duration + 1)], index=self.dates_range)
         else:
             self.project_ctp(incoming_routes)
 
@@ -119,16 +120,16 @@ class ProjectionCTP(StockProjection):
         self.df['cum_supply'] = np.cumsum(self.df['supply'])
         self.df['cum_capacity'] = potential_capacity(routes, self.dates_range)
 
-        self.df['Unused capacity'] = np.subtract(self.df['cum_capacity'], self.df['cum_supply'])
+        self.df['Uncommitted capacity'] = np.subtract(self.df['cum_capacity'], self.df['cum_supply'])
         # Purge premature "unused capacity" which is in fact committed to a later delivery.
         i = 0
-        for unused_capacity in self.df['Unused capacity'][::-1]:
+        for unused_capacity in self.df['Uncommitted capacity'][::-1]:
             if unused_capacity <= 0:
-                self.df['Unused capacity'].iloc[:self.duration - i + 1] = 0
+                self.df['Uncommitted capacity'].iloc[:self.duration - i + 1] = 0
                 break
             i += 1
 
-        self.df["potential_inventory"] = np.add(self.df['inventory'], self.df['Unused capacity'])
+        self.df["potential_inventory"] = np.add(self.df['inventory'], self.df['Uncommitted capacity'])
 
         self.df["CTP"] = minimum_future(self.df["potential_inventory"])
         self.df.drop(columns=['cum_supply', 'cum_capacity', 'potential_inventory'], inplace=True)
