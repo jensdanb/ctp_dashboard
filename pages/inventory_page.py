@@ -8,13 +8,13 @@ import pandas as pd
 from h2o_wave import Q, ui, data
 
 
-plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'Unused capacity', 'CTP']
+plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'Uncommitted capacity', 'CTP']
 column_plot_styles = {
     'demand': {'color': 'red', 'type': 'interval'},
     'supply': {'color': 'blue', 'type': 'interval'},
     'inventory': {'color': 'teal', 'type': 'area'},
     'ATP': {'color': 'green', 'type': 'area'},
-    'Unused capacity': {'color': 'red', 'type': 'line'},
+    'Uncommitted capacity': {'color': 'red', 'type': 'line'},
     'CTP': {'color': 'orange', 'type': 'area'}
 }
 
