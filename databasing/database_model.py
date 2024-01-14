@@ -3,7 +3,7 @@ from datetime import date, timedelta
 
 from sqlalchemy import Column, String, Table, Date, ForeignKey
 from sqlalchemy import CheckConstraint, UniqueConstraint
-from sqlalchemy import create_engine, select, exc, update
+from sqlalchemy import create_engine, select, exc, update, URL
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.orm import declarative_base
