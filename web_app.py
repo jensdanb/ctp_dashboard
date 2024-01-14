@@ -16,7 +16,15 @@ async def serve_ctp(q: Q):
         q.client.initialized = True
 
         # Database  initialization
-        q.user.db_engine = dbm.create_engine("sqlite+pysqlite:///:memory:", echo=False, future=True)
+        url_object = dbm.URL.create(
+            "sqlite+pysqlite",
+            username=None,
+            password=None,  # plain (unescaped) text
+            host=None,
+            database="memory",
+        ) # "sqlite+pysqlite:///:memory:"
+        q.user.db_engine = dbm.create_engine(url_object, echo=False, future=True)
+        
         dbm.reset_db(q.user.db_engine)
         with dbm.Session(q.user.db_engine) as init_session:
             dbm.add_from_class(init_session, ProductA)
