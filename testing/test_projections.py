@@ -76,7 +76,8 @@ class TestATP:
 
             for stockpoint in all_stockpoints:
                 projection = ProjectionATP(test_session, stockpoint)
-                assert projection.plot
+                t_plot = projection.make_plot(20)
+                assert t_plot.plot_date
                 assert strictly_increasing(projection.df['ATP'])
 
 

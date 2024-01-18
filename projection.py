@@ -58,7 +58,7 @@ class ProjectionATP(StockProjection):
     def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
         super().__init__(session, stockpoint, plot_period)
         self.df["ATP"] = minimum_future(self.df["inventory"])
-        self.plot = self.make_plot(plot_period)
+        # self.plot = self.make_plot(plot_period)
 
     def make_plot(self, duration: int):
         plot_window = self.df.loc[self.start_date:self.start_date + timedelta(days=duration)].copy()
@@ -114,7 +114,7 @@ class ProjectionCTP(StockProjection):
         else:
             self.project_ctp(incoming_routes)
 
-        self.plot = self.make_plot(plot_period)
+        # self.plot = self.make_plot(plot_period)
 
     def project_ctp(self, routes: list[SupplyRoute]):
         self.df['cum_supply'] = np.cumsum(self.df['supply'])

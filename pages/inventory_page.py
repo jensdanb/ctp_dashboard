@@ -58,7 +58,7 @@ async def serve_inventory_page(q: Q):
         with dbm.Session(q.user.db_engine) as plot_session:
             stockpoint = get_selected(q, plot_session, dbm.StockPoint)
             projection = ProjectionCTP(plot_session, stockpoint, q.client.plot_length)
-        await mpl_plot(q, projection.plot)
+        await mpl_plot(q, projection)
 
     elif q.args.native_plot_button:
         with dbm.Session(q.user.db_engine) as plot_session:
@@ -220,9 +220,9 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
         )
 
 
-async def mpl_plot(q: Q, plot):
+async def mpl_plot(q: Q, projection):
     q.page['plot'] = ui.markdown_card(box='plot_zone', title='Projected inventory', content='')
-
+    plot = projection.make_plot(q.client.plot_length)
     # Make temporary image file from the matplotlib plot
     image_filename = f'{str(uuid.uuid4())}.png'
     plot.savefig(image_filename)
