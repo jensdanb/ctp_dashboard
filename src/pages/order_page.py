@@ -1,8 +1,9 @@
 import datetime
 
-import src.databasing.database_model as dbm
-from src.pages.shared_content import get_selected, show_children, product_dropdown, supply_route_choice_group
 from h2o_wave import Q, ui
+
+from ..databasing import database_model as dbm
+from .shared_content import get_selected, show_children, product_dropdown, supply_route_choice_group
 
 
 def layout(q: Q):

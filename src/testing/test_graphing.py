@@ -1,4 +1,4 @@
-from src.databasing.relationship_graphing import *
+from ..databasing.relationship_graphing import *
 
 
 def test_product_graph():

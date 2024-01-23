@@ -1,11 +1,10 @@
-from databasing import database_model as dbm
-from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
-
-from pages import order_page as orderpage
-from pages import supply_chain_page as datapage
-from pages import inventory_page as plotpage
-
 from h2o_wave import main, Q, app, ui, copy_expando
+
+from .databasing import database_model as dbm
+from .databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
+from .pages import order_page as orderpage
+from .pages import supply_chain_page as datapage
+from .pages import inventory_page as plotpage
 
 
 @app('/', mode='unicast')

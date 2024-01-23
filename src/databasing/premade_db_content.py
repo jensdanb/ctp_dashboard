@@ -1,10 +1,10 @@
-from src.databasing.database_model import *
-
 import itertools
 from random import randint, choice, randrange
+
 from faker import Faker
 from faker.providers import lorem, color
 
+from .database_model import *
 
 class ProductA():
     def __init__(self):

@@ -1,7 +1,7 @@
-from src.databasing.database_model import *
-from src.databasing.premade_db_content import BranchingProduct
-from src.projection import ProjectionATP, ProjectionCTP
-from src.forecasting import generate_random_requests
+from ..databasing.database_model import *
+from ..databasing.premade_db_content import BranchingProduct
+from ..projection import ProjectionATP, ProjectionCTP
+from ..forecasting import generate_random_requests
 
 import pandas as pd
 import numpy as np

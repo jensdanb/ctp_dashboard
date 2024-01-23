@@ -1,11 +1,12 @@
-from databasing.database_model import *
 import numpy as np
 import pandas as pd
+
 from matplotlib import pyplot as plt
 
+from .databasing.database_model import *
+
+
 """ Parent class: """
-
-
 class StockProjection:
     def __init__(self, session: Session, stockpoint: StockPoint, plot_period=24):
 

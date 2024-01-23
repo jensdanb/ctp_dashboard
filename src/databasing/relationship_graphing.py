@@ -1,9 +1,12 @@
-from src.databasing.premade_db_content import ProductA, FakeProduct
-import src.databasing.database_model as dbm
+from os import remove
 
 from pyvis.network import Network
 import networkx as nx
-from os import remove
+
+from ..databasing.premade_db_content import ProductA, FakeProduct
+from . import database_model as dbm
+
+
 
 
 def product_to_graph(session, product: dbm.Product):

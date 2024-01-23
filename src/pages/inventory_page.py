@@ -1,11 +1,13 @@
-from src.databasing import database_model as dbm
-from src.projection import StockProjection, ProjectionCTP
-from src.pages.shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group
-
 import os
 import uuid
+
 import pandas as pd
 from h2o_wave import Q, ui, data
+
+from ..databasing import database_model as dbm
+from ..projection import StockProjection, ProjectionCTP
+from .shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group
+
 
 
 plotable_columns = ['demand', 'supply', 'inventory', 'ATP', 'Uncommitted capacity', 'CTP']
