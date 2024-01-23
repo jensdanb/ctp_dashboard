@@ -1,0 +1,15 @@
+---
+version: '3.10'
+
+services:
+  wave_local_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5432:10101"
+    volumes:
+      - ./src:/app/src
+    environment:
+      H2O_WAVE_ADDRESS: http://localhost:10101
+...
