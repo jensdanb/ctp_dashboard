@@ -4,4 +4,6 @@
 /lib/
 __pycache__
 /.pytest_cache/
+/src/testing/.pytest_cache
+/src/testing/lib/
 memory
