@@ -1,6 +1,4 @@
-from databasing.relationship_graphing import *
-
-import pytest
+from src.databasing.relationship_graphing import *
 
 
 def test_product_graph():

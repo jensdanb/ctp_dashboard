@@ -1,5 +1,5 @@
-from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
-import databasing.database_model as dbm
+from src.databasing.premade_db_content import ProductA, FakeProduct
+import src.databasing.database_model as dbm
 
 from pyvis.network import Network
 import networkx as nx

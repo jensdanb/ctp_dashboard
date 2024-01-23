@@ -1,7 +1,7 @@
-from databasing import database_model as dbm
-from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
-import databasing.relationship_graphing as graphing
-from pages.shared_content import get_selected, product_dropdown, show_table
+from src.databasing import database_model as dbm
+from src.databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
+import src.databasing.relationship_graphing as graphing
+from src.pages.shared_content import get_selected, product_dropdown, show_table
 
 from h2o_wave import Q, ui
 

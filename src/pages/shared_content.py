@@ -1,4 +1,4 @@
-from databasing import database_model as dbm
+from src.databasing import database_model as dbm
 
 from h2o_wave import Q, ui
 

@@ -1,5 +1,5 @@
-from databasing.database_model import *
-from databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
+from src.databasing.database_model import *
+from src.databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 
 from sqlalchemy import inspect
 import pytest

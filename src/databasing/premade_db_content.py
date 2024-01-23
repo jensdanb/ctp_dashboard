@@ -1,4 +1,4 @@
-from databasing.database_model import *
+from src.databasing.database_model import *
 
 import itertools
 from random import randint, choice, randrange

@@ -1,5 +1,5 @@
-from databasing.premade_db_content import ProductA, FakeProduct
-from projection import *
+from src.databasing.premade_db_content import ProductA, FakeProduct
+from src.projection import *
 
 import pytest
 from sqlalchemy.orm import exc

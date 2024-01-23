@@ -1,6 +1,6 @@
-from databasing import database_model as dbm
-from projection import StockProjection, ProjectionCTP
-from pages.shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group
+from src.databasing import database_model as dbm
+from src.projection import StockProjection, ProjectionCTP
+from src.pages.shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group
 
 import os
 import uuid
