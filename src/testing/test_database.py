@@ -1,8 +1,8 @@
-from ..databasing.database_model import *
-from ..databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
-
 from sqlalchemy import inspect
 import pytest
+
+from ..databasing.database_model import *
+from ..databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
 
 
 def capture_sql_exception(func, *args, **kwargs):
