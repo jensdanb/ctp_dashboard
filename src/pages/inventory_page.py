@@ -6,7 +6,7 @@ from h2o_wave import Q, ui, data
 
 from ..databasing import database_model as dbm
 from ..projection import StockProjection, ProjectionCTP
-from .shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group
+from .shared_content import get_selected, DbContent, product_dropdown, stockpoint_choice_group, force_select_child_in_selected_parent
 
 
 
@@ -24,7 +24,7 @@ column_plot_styles = {
 def layout(q: Q):
     q.page['meta'] = ui.meta_card(box='', layouts=[
         ui.layout(
-            breakpoint='xs',
+            breakpoint='s',
             zones=[
                 ui.zone('header_zone'),  # DO NOT CHANGE header_zone WITHOUT ALSO CHANGING IT IN OTHER PAGES
                 ui.zone('inv_sp_selection_zone'),
@@ -33,8 +33,10 @@ def layout(q: Q):
                     ui.zone('inv_status_zone_b', size='34%'),
                     ui.zone('inv_status_zone_c', size='33%'),
                 ]),
-                ui.zone('inv_control_zone'),
-                ui.zone('plot_zone'),
+                ui.zone('inv_plot_zones', direction=ui.ZoneDirection.COLUMN, zones=[
+                    ui.zone('inv_control_zone'),
+                    ui.zone('plot_zone'),
+                ])
             ]
         ),
         ui.layout(
@@ -47,46 +49,31 @@ def layout(q: Q):
                     ui.zone('inv_status_zone_b', size='34%'),
                     ui.zone('inv_status_zone_c', size='33%'),
                 ]),
-                ui.zone('inv_control_zone'),
-                ui.zone('plot_zone'),
+                ui.zone('inv_plot_zones', direction=ui.ZoneDirection.ROW, zones=[
+                    ui.zone('inv_control_zone', size='20%'),
+                    ui.zone('plot_zone'),
+                ])
             ]
         )
     ])
 
 
-async def serve_inventory_page(q: Q):
+async def serve_inventory_page(q: Q, session, db_content):
 
-    if q.args.matplotlib_plot_button:
-        with dbm.Session(q.user.db_engine) as plot_session:
-            stockpoint = get_selected(q, plot_session, dbm.StockPoint)
-            projection = ProjectionCTP(plot_session, stockpoint, q.client.plot_length)
-        await mpl_plot(q, projection)
+    show_stockpoint_selection(q, session, 'inv_sp_selection_zone', trigger1=True)
 
-    elif q.args.native_plot_button:
-        with dbm.Session(q.user.db_engine) as plot_session:
-            stockpoint = get_selected(q, plot_session, dbm.StockPoint)
-            projection = ProjectionCTP(plot_session, stockpoint, q.client.plot_length)
-        native_plot(q, projection, plot_period=q.client.plot_length)
+    await show_inventory_status(q, db_content, boxes=['inv_status_zone_a', 'inv_status_zone_b'])
+    await show_sp_move_orders(q, box='inv_status_zone_c')
 
-    else:
-        with dbm.Session(q.user.db_engine) as fetching_session:
-            db_content = DbContent(q, fetching_session)
-
-            show_stockpoint_selection(q, 'inv_sp_selection_zone', trigger1=True)
-            await show_inventory_status(q, db_content, boxes=['inv_status_zone_a', 'inv_status_zone_b'])
-            await show_sp_move_orders(q, box='inv_status_zone_c')
-            show_plot_controls(q)
+    show_plot_controls(q)
+    projection = ProjectionCTP(session, db_content.stockpoint, q.client.plot_length)
+    show_plot(q, projection, plot_period=q.client.plot_length)
 
 
-def fetch_inventory_data(q: Q):
-    with dbm.Session(q.user.db_engine) as fetching_session:
-        return
 
-
-def show_stockpoint_selection(q: Q, box, trigger1=True, trigger2=True):
-    with dbm.Session(q.user.db_engine) as session:
-        product_chooser = product_dropdown(q, session, trigger=trigger1)
-        stockpoint_chooser = stockpoint_choice_group(q, session, inline=True, trigger=trigger2)
+def show_stockpoint_selection(q: Q, session, box, trigger1=True, trigger2=True):
+    product_chooser = product_dropdown(q, session, trigger=trigger1, width='300px')
+    stockpoint_chooser = stockpoint_choice_group(q, session, inline=True, trigger=trigger2)
 
     q.page['stockpoint_selection'] = ui.form_card(
         box=box,
@@ -169,20 +156,16 @@ def show_plot_controls(q: Q):
     q.page['controls'] = ui.form_card(
         box='inv_control_zone',
         items=[
-            ui.text_xl("Inventory Projections"),
-            ui.buttons([
-                ui.button(name='matplotlib_plot_button', label='Plot with Matplotlib'),
-                ui.button(name='native_plot_button', label='Plot with WebApp Plot')
-            ]),
-
+            ui.text_xl("Plot controls"),
+            ui.button(name='refresh_plot_button', label='Refresh plot'),
             ui.slider(name='plot_length', label='Number of days in plot', min=10, max=50, step=1, value=q.client.plot_length),
-            ui.checklist(name='plot_columns', label='Data columns in plot', values=plotable_columns, inline=True,
+            ui.checklist(name='plot_columns', label='Include in plot:', values=q.client.plot_columns, inline=False,
                          choices=[ui.choice(name=col_name, label=col_name) for col_name in plotable_columns])
         ]
     )
 
 
-def native_plot(q: Q, projection: StockProjection, plot_period: int):
+def show_plot(q: Q, projection: StockProjection, plot_period: int):
     selected_columns = q.client.plot_columns
     if selected_columns:
         plot_frame: pd.DataFrame = projection.df.loc[projection.df.index[:plot_period], selected_columns].copy()
@@ -222,6 +205,7 @@ def native_plot(q: Q, projection: StockProjection, plot_period: int):
         )
 
 
+# Legacy, not in use
 async def mpl_plot(q: Q, projection):
     q.page['plot'] = ui.markdown_card(box='plot_zone', title='Projected inventory', content='')
     plot = projection.make_plot(q.client.plot_length)
