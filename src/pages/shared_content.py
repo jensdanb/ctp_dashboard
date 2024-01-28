@@ -6,17 +6,29 @@ from ..databasing import database_model as dbm
 def get_selected(q: Q, session, table):
     match table:
         case dbm.Product:
-            return dbm.get_by_id(session, dbm.Product, int(q.client.product_selection))
+            return dbm.get_by_id(session, dbm.Product, q.client.product_selection)
         case dbm.StockPoint:
-            return dbm.get_by_id(session, dbm.StockPoint, int(q.client.stockpoint_selection))
+            return dbm.get_by_id(session, dbm.StockPoint, q.client.stockpoint_selection)
         case dbm.SupplyRoute:
-            return dbm.get_by_id(session, dbm.SupplyRoute, int(q.client.supply_route_selection))
+            return dbm.get_by_id(session, dbm.SupplyRoute, q.client.supply_route_selection)
         case dbm.MoveRequest:
             raise NotImplementedError('No selection implemented for MoveRequest!')
         case dbm.MoveOrder:
             raise NotImplementedError('No selection implemented for MoveOrder!')
         case _:
             raise ValueError(f'Table argument {table} is not in {dbm.expected_orms_in_db}')
+
+
+# Only use behind inside if-block: if q.args.product_selection:
+def force_select_child_in_selected_parent(q: Q, session):
+    def choose_child_stockpoint():
+        children = get_selected(q, session, dbm.Product).stock_points
+        if len(children) > 2:
+            return children[-2].id
+        else:
+            return children[0].id
+
+    q.client.stockpoint_selection = choose_child_stockpoint()
 
 
 class DbContent:
@@ -33,7 +45,7 @@ class DbContent:
         self.outgoing_routes: [dbm.SupplyRoute] = dbm.get_outgoing_routes(session, self.stockpoint)
 
 
-def product_dropdown(q: Q, session, trigger=False):
+def product_dropdown(q: Q, session, trigger=False, width=None):
     products = dbm.get_all(session, dbm.Product)
     product_choices = [
         ui.choice(name=str(product.id), label=product.name)
@@ -41,26 +53,28 @@ def product_dropdown(q: Q, session, trigger=False):
     ]
     return ui.dropdown(name='product_selection',
                        label='Select Product',
-                       value=q.client.product_selection,
+                       value=str(q.client.product_selection),
                        choices=product_choices,
-                       trigger=trigger)
+                       trigger=trigger,
+                       width=width)
 
 
-def stockpoint_choice_group(q: Q, session, inline=False, trigger=False):
+def stockpoint_choice_group(q: Q, session, inline=False, trigger=False, width=None):
     stockpoint_choices = assemble_choices(q, session, dbm.Product, 'stock_points')
     return ui.choice_group(name='stockpoint_selection',
                            label='Select Stockpoint',
                            inline=inline,
-                           value=q.client.stockpoint_selection,
+                           value=str(q.client.stockpoint_selection),
                            choices=stockpoint_choices,
-                           trigger=trigger)
+                           trigger=trigger,
+                           width=width)
 
 
 def supply_route_choice_group(q: Q, session, trigger=False):
     supply_routes_choices = assemble_choices(q, session, dbm.Product, 'supply_routes')
     return ui.choice_group(name='supply_route_selection',
                            label='Select Route',
-                           value=q.client.stockpoint_selection,
+                           value=str(q.client.stockpoint_selection),
                            choices=supply_routes_choices,
                            trigger=trigger, inline=True)
 
@@ -80,7 +94,7 @@ def assemble_choices(q: Q, session, owner_category: dbm.Base, target_attr_in_own
             owner = get_selected(q, session, owner_category)
             items = getattr(owner, target_attr_in_owner)
             choices = [
-                ui.choice(name=str(item.id), label=str(item.id))
+                ui.choice(name=str(item.id), label=item.name)
                 for item in items
             ]
             return choices
