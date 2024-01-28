@@ -34,22 +34,18 @@ def layout(q: Q):
     ])
 
 
-async def serve_order_page(q:Q):
+async def serve_order_page(q:Q, session):
     if q.args.show_move_requests:
-        with dbm.Session(q.user.db_engine) as session:
-            show_children(q, session, dbm.MoveRequest, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
+        show_children(q, session, dbm.MoveRequest, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
     elif q.args.show_move_orders:
-        with dbm.Session(q.user.db_engine) as session:
-            show_children(q, session, dbm.MoveOrder, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
+        show_children(q, session, dbm.MoveOrder, box='order_table_zone', parent=get_selected(q, session, dbm.SupplyRoute))
     elif q.args.make_request:
         make_request(q)
     elif q.args.submit_request:
-        with dbm.Session(q.user.db_engine) as session:
-            submit_request(q, session)
-            show_order_controls(q, session)
+        submit_request(q, session)
+        show_order_controls(q, session)
     else:
-        with dbm.Session(q.user.db_engine) as session:
-            show_order_controls(q, session)
+        show_order_controls(q, session)
 
 
 def show_order_controls(q: Q, session, message=''):

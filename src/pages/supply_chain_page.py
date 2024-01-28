@@ -38,31 +38,26 @@ def layout(q: Q):
     ])
 
 
-async def serve_supply_chain_page(q: Q):
+async def serve_supply_chain_page(q: Q, session):
     if q.args.reset_db:
-        with dbm.Session(q.user.db_engine) as session:
-            dbm.reset_and_fill_db(q.user.db_engine, session, [ProductA, FakeProduct, BranchingProduct])
-            session.commit()
-
-            update_sc_cards(q, session)
+        dbm.reset_and_fill_db(q.user.db_engine, session, [ProductA, FakeProduct, BranchingProduct])
+        session.commit()
+        update_sc_cards(q, session)
 
     elif q.args.show_graph:
-        with dbm.Session(q.user.db_engine) as session:
-            show_graph(q, session)
+        show_graph(q, session)
     else:
-        with dbm.Session(q.user.db_engine) as session:
-            update_sc_cards(q, session)
+        update_sc_cards(q, session)
 
 
 def update_sc_cards(q: Q, session):
     show_graph(q, session)
     show_table(q, session, dbm.SupplyRoute, box='sc_control_zone_b')
-    show_sc_controls(q)
+    show_sc_controls(q, session)
 
 
-def show_sc_controls(q: Q):
-    with dbm.Session(q.user.db_engine) as session:
-        product_selector = product_dropdown(q, session, trigger=True)
+def show_sc_controls(q: Q, session):
+    product_selector = product_dropdown(q, session, trigger=True)
     q.page['sc_controls'] = ui.form_card(
         box='sc_control_zone_a',
         items=[
