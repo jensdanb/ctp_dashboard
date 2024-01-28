@@ -164,9 +164,9 @@ def reset_db(engine):
     Base.metadata.create_all(engine)
 
 
-def get_by_name(session, table, element_name: str):
+def get_all_by_name(session, table, element_name: str):
     stmt = select(table).where(table.name == element_name)
-    return session.scalars(stmt).one()
+    return session.scalars(stmt).all()
 
 
 def get_by_id(session, table, element_id: int):

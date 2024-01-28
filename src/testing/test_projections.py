@@ -12,9 +12,9 @@ def strictly_increasing(values: pd.Series):
 
 
 def universal_projection_assertions(session, projection):
-    stockpoint_in_db = get_by_name(session, StockPoint, projection.stockpoint_name)
+    stockpoints_in_db = get_all_by_name(session, StockPoint, projection.stockpoint_name)
     # Consistency with database:
-    assert projection.stockpoint_id == stockpoint_in_db.id
+    assert projection.stockpoint_id in [sp_from_db.id for sp_from_db in stockpoints_in_db]
     assert isinstance(projection.start_date, date)
     assert projection.start_date < projection.final_date
     assert isinstance(projection.df, pd.DataFrame) and not projection.df.empty
@@ -56,7 +56,7 @@ class TestStockProjection:
 
         # and we can "reconnect" with a new session and the name attribute
         with Session(test_engine) as test_session:
-            new_sp = get_by_name(test_session, StockPoint, projection.stockpoint_name)
+            new_sp = get_all_by_name(test_session, StockPoint, projection.stockpoint_name)[-1]
             new_projection = ProjectionATP(test_session, new_sp)
             assert new_projection.df.equals(projection.df)
 
@@ -85,8 +85,8 @@ class TestCTP:
     def test_determined_ctp_projections(self):
         # Known stockpoints
         with Session(test_engine) as ctp_session1:
-            sp_1 = get_by_name(ctp_session1, StockPoint, "Unfinished goods")
-            sp_2 = get_by_name(ctp_session1, StockPoint, "Finished goods")
+            sp_1 = get_all_by_name(ctp_session1, StockPoint, "Unfinished goods")[-1]
+            sp_2 = get_all_by_name(ctp_session1, StockPoint, "Finished goods")[-1]
             projection1 = ProjectionCTP(ctp_session1, sp_1)
             projection2 = ProjectionCTP(ctp_session1, sp_2)
 

@@ -35,6 +35,8 @@ class TestConfig:
         # DB content persists to new session
         with Session(test_engine) as test_config_session_b:
             stockpoints_in_db = test_config_session_b.scalars(select(StockPoint)).all()
+            stockpoint_fetched_by_name = get_all_by_name(test_config_session_b, StockPoint, 'stockpoint_c')
+            assert isinstance(stockpoint_fetched_by_name, List)
             assert len(stockpoints_in_db) == 1 and stockpoints_in_db[0].product.name == 'Product C'
 
         # DB content is emptied with reset()
