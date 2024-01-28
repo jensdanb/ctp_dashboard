@@ -2,8 +2,9 @@ from h2o_wave import main, Q, app, ui, copy_expando
 
 from .databasing import database_model as dbm
 from .databasing.premade_db_content import ProductA, FakeProduct, BranchingProduct
+from .pages.shared_content import get_selected, DbContent, force_select_child_in_selected_parent
 from .pages import order_page as orderpage
-from .pages import supply_chain_page as datapage
+from .pages import supply_chain_page as sc_page
 from .pages import inventory_page as plotpage
 
 
@@ -32,32 +33,36 @@ async def serve_ctp(q: Q):
             init_session.commit()
 
         # UI initialization
-        q.client.product_selection = '1'
-        q.client.stockpoint_selection = '2'  # Warning! Do not set to id number that could be outside initially selected product!
-        q.client.supply_route_selection = '1'
+        q.client.product_selection = 1
+        q.client.stockpoint_selection = 2  # Warning! Do not set to id number that could be outside initially selected product!
+        q.client.supply_route_selection = 1
         q.client.plot_length = 12
         q.client.plot_columns = plotpage.plotable_columns
 
-    """ Data updates on user action """
-    copy_expando(q.args, q.client)
+    with dbm.Session(q.user.db_engine) as ui_session:
 
-    """ UI response on user action """
-    page_hash = q.args['#']
+        """ Data updates on user action """
+        copy_expando(q.args, q.client)
 
-    if page_hash == 'sc_page':
-        datapage.layout(q)
-        await datapage.serve_supply_chain_page(q)
+        db_content = DbContent(q, ui_session)
 
-    elif page_hash == 'order_page':  # ->
-        orderpage.layout(q)
-        await orderpage.serve_order_page(q)
+        """ UI response on user action """
+        page_hash = q.args['#']
 
-    elif page_hash == 'inventory_page' or page_hash is None:  #
-        plotpage.layout(q)
-        await plotpage.serve_inventory_page(q)
+        if page_hash == 'sc_page':
+            sc_page.layout(q)
+            await sc_page.serve_supply_chain_page(q, ui_session)
 
-    show_header(q)
-    await q.page.save()
+        elif page_hash == 'order_page':  # ->
+            orderpage.layout(q)
+            await orderpage.serve_order_page(q, ui_session)
+
+        elif page_hash == 'inventory_page' or page_hash is None:  #
+            plotpage.layout(q)
+            await plotpage.serve_inventory_page(q, ui_session, db_content)
+
+        show_header(q)
+        await q.page.save()
 
 
 def show_header(q: Q):
@@ -67,8 +72,8 @@ def show_header(q: Q):
         'order_page': 'Orders',
         'inventory_page': 'Inventories',
     }
-    pagination_items = [ui.button(name=f'#{hash}',label=hash_to_label[hash], link=True)
-                        for hash in hash_to_label]
+    pagination_items = [ui.button(name=f'#{page_hash}',label=hash_to_label[page_hash], link=True)
+                        for page_hash in hash_to_label]
     q.page['header'] = ui.header_card(box='header_zone',
                                       title=hash_to_label[page_hash] if page_hash else 'Inventories',
                                       subtitle='',
