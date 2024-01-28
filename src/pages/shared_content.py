@@ -3,7 +3,6 @@ from h2o_wave import Q, ui
 from ..databasing import database_model as dbm
 
 
-
 def get_selected(q: Q, session, table):
     match table:
         case dbm.Product:
@@ -134,13 +133,12 @@ def show_table(q: Q, session, db_table: dbm.Base, box):
 def show_children(q: Q, session, db_table: dbm.Base, box, parent):
     title = db_table.__name__
 
-    conversion_dict  = table_conversion_dicts[db_table]
+    conversion_dict = table_conversion_dicts[db_table]
     columns = [title] + list(conversion_dict.keys())
 
     items = table_of_children(q, session, db_table, conversion_dict, parent)
 
     q.page['db_table'] = ui.stat_table_card(box=box, title=title+'s', columns=columns, items=items)
-
 
 
 def build_stat_table(items, conversion_dict):
@@ -222,4 +220,3 @@ def format_table_item_move_order(item):
         item.values[0] = 'Completed'
         item.colors[0] = 'blue'
     return item
-
